@@ -20,7 +20,7 @@ coveralls = "^3.3.1"
 optional = true
 
 [tool.poetry.group.github-action.dependencies]
-fake-api-server = "^0.4.1"
+gunicorn = "^20.1.0"
 
 [build-system]
 requires = ["poetry-core"]
