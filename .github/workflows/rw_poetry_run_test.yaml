@@ -47,6 +47,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         required: true
         type: string
+      test_working_directory:
+        description: "The working directory for test running."
+        required: false
+        type: string
+        default: ''
       install_dependency_with_group:
         description: "Install the dependency by Poetry configuration with dependency group setting. This parameter receive the dependency group naming."
         type: string
@@ -124,16 +129,19 @@ jobs:
 
       - name: Build Python runtime environment by Poetry
         if: ${{ inputs.install_dependency_with_group != '' || inputs.install_dependency_without_group != '' }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           poetry install
 
       - name: Build Python runtime environment by Poetry with dependency group *${{ inputs.install_dependency_with_group }}*
         if: ${{ inputs.install_dependency_with_group != '' }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           poetry install --with=${{ inputs.install_dependency_with_group }}
 
       - name: Build Python runtime environment by Poetry without dependency group *${{ inputs.install_dependency_without_group }}*
         if: ${{ inputs.install_dependency_without_group != '' }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           poetry install --without=${{ inputs.install_dependency_without_group }}
 
@@ -146,10 +154,12 @@ jobs:
         run: curl "http://${{ inputs.http_server_host }}:${{ inputs.http_server_port }}/exchangeReport/STOCK_DAY?response=json&date=20170101&stockNo=2331"
 
       - name: Run tests with pytest
+        working-directory: ${{ inputs.test_working_directory }}
         run: poetry run pytest ${{ matrix.test-path }}
         continue-on-error: ${{ inputs.keep_run_if_test_fail }}
 
       - name: Rename the code coverage result file
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
 
