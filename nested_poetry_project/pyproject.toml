@@ -7,7 +7,7 @@ license = "Apache License 2.0"
 packages = [{include = "nested_python_src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
