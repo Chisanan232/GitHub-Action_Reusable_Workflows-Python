@@ -149,6 +149,7 @@ jobs:
 
       - name: Setup and run HTTP server for testing
         if: ${{ inputs.setup_http_server == true }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: gunicorn --bind ${{ inputs.http_server_host }}:${{ inputs.http_server_port }} '${{ inputs.http_server_app_module }}:${{ inputs.http_server_enter_point }}' --daemon
 
       - name: Test to send HTTP request to sample HTTP server
@@ -169,6 +170,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage_${{ inputs.test_type }}_${{ inputs.runtime_os }}_${{ inputs.python_version }}
-          path: .coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
+          path: ${{ inputs.test_working_directory }}/.coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
           if-no-files-found: error
           include-hidden-files: true
