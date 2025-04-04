@@ -5,6 +5,7 @@
 #
 # Workflow input parameters:
 #     * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
+#     * test_working_directory: The working directory for test running.
 #
 # Workflow running output:
 #     No, but it would save the testing coverage reports (coverage.xml) to provide after-process to organize and record.
@@ -24,6 +25,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         type: string
         required: true
+      test_working_directory:
+        description: "The working directory for test running."
+        required: false
+        type: string
+        default: './'
 
 
 jobs:
@@ -37,7 +43,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: coverage*
-          path: ./
+          path: ${{ inputs.test_working_directory }}
           merge-multiple: true
 
       - name: Setup Python 3.10 in Ubuntu OS
@@ -46,6 +52,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Python tool 'coverage'
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           python3 -m pip install --upgrade pip
           pip3 install -U pip
@@ -54,6 +61,7 @@ jobs:
           ls -la
 
       - name: Combine all testing coverage data files with test type and runtime OS, and convert to XML format file finally
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/combine_coverage_reports.sh --output ./scripts/ci/combine_coverage_reports.sh
           bash ./scripts/ci/combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
@@ -62,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.test_type }}_coverage_data_file
-          path: .coverage
+          path: ${{ inputs.test_working_directory }}.coverage
           if-no-files-found: error
           include-hidden-files: true
 
@@ -70,6 +78,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.test_type }}_coverage_xml_report
-          path: coverage**xml
+          path: ${{ inputs.test_working_directory }}coverage**xml
           if-no-files-found: error
           include-hidden-files: true
