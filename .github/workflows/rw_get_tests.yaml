@@ -4,6 +4,7 @@
 #     Run a specific shell script to get all test items.
 #
 # Workflow input parameters:
+#     * test_working_directory: The working directory for test running.
 #     * shell_path: The file path of shell script which gets all the test items.
 #     * shell_arg: The arguments of the shell script which gets all the test items.
 #     * use_customized_shell: Don't use the shell script template project prepares, run customized shell script.
@@ -18,6 +19,11 @@ name: Prepare test items
 on:
   workflow_call:
     inputs:
+      test_working_directory:
+        description: "The working directory for test running."
+        required: false
+        type: string
+        default: ''
       shell_path:
         description: "The file path of shell script which gets all the test items."
         required: false
@@ -53,6 +59,7 @@ jobs:
         run: curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/get-all-tests.sh --output ${{ inputs.shell_path }}
 
       - id: set-matrix
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
           sudo apt-get install jq
           echo "all_test_items=$(bash ${{ inputs.shell_path }} ${{ inputs.shell_arg }})" >> $GITHUB_OUTPUT
