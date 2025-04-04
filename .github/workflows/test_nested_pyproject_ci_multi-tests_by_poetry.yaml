@@ -84,6 +84,7 @@ jobs:
     uses: ./.github/workflows/rw_organize_test_cov_reports.yaml
     with:
       test_type: all-test
+      test_working_directory: './nested_poetry_project/'
 
 
   codecov_finish:
