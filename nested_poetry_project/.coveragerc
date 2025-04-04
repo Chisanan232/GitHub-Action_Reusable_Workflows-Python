@@ -1,0 +1,7 @@
+[run]
+parallel = True
+relative_files = True
+include=./test_gh_workflow
+
+omit =
+    */__init__.py
