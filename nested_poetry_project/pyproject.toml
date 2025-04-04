@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "test_nested_github_action_workflow"
+name = "nested_poetry_project"
 version = "0.1.0"
 description = "This is a testing package of GitHub Action reusable workflow"
 authors = ["Chisanan232 <chi10211201@cycu.org.tw>"]
@@ -7,7 +7,7 @@ license = "Apache License 2.0"
 packages = [{include = "test_gh_workflow"}]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.9,<3.13"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
