@@ -120,10 +120,11 @@ jobs:
           pip install -U flask
           pip install -U gunicorn
           pip install -U poetry
+          poetry --version
 
       - name: Build Python runtime environment by Poetry
+        if: ${{ inputs.install_dependency_with_group != '' || inputs.install_dependency_without_group != '' }}
         run: |
-          poetry --version
           poetry install
 
       - name: Build Python runtime environment by Poetry with dependency group *${{ inputs.install_dependency_with_group }}*
@@ -131,7 +132,7 @@ jobs:
         run: |
           poetry install --with=${{ inputs.install_dependency_with_group }}
 
-      - name: Build Python runtime environment by Poetry with dependency group *${{ inputs.install_dependency_without_group }}*
+      - name: Build Python runtime environment by Poetry without dependency group *${{ inputs.install_dependency_without_group }}*
         if: ${{ inputs.install_dependency_without_group != '' }}
         run: |
           poetry install --without=${{ inputs.install_dependency_without_group }}
