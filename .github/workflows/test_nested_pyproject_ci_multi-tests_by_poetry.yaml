@@ -1,4 +1,4 @@
-name: Python project with Poetry CI Test (multi-tests)
+name: Nested Python project with Poetry CI Test (multi-tests)
 
 on:
   pull_request:
