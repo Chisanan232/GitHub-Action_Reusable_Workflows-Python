@@ -1,11 +1,11 @@
-import nested_poetry_project.nested_python_src.sample
+import nested_python_src.sample
 import logging
 import pytest
 
 
 @pytest.fixture(scope="function")
 def get_hello_python() -> str:
-    return test_gh_workflow.sample.hello_python()
+    return nested_python_src.sample.hello_python()
 
 
 def test_sample(get_hello_python: str) -> None:
