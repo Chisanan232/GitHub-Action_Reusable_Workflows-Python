@@ -23,7 +23,7 @@ on:
         description: "The working directory for test running."
         required: false
         type: string
-        default: ''
+        default: './'
       shell_path:
         description: "The file path of shell script which gets all the test items."
         required: false

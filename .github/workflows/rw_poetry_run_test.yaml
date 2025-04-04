@@ -53,7 +53,7 @@ on:
         description: "The working directory for test running."
         required: false
         type: string
-        default: ''
+        default: './'
       install_dependency_with_group:
         description: "Install the dependency by Poetry configuration with dependency group setting. This parameter receive the dependency group naming."
         type: string
