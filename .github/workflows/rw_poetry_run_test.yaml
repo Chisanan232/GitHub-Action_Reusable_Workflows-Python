@@ -52,6 +52,11 @@ on:
         type: string
         required: false
         default: ''
+      install_dependency_without_group:
+        description: "Install the dependency by Poetry configuration without dependency group setting. This parameter receive the dependency group naming."
+        type: string
+        required: false
+        default: ''
       all_test_items_paths:
         description: "The target paths of test items under test."
         required: true
@@ -125,6 +130,11 @@ jobs:
         if: ${{ inputs.install_dependency_with_group != '' }}
         run: |
           poetry install --with=${{ inputs.install_dependency_with_group }}
+
+      - name: Build Python runtime environment by Poetry with dependency group *${{ inputs.install_dependency_without_group }}*
+        if: ${{ inputs.install_dependency_without_group != '' }}
+        run: |
+          poetry install --without=${{ inputs.install_dependency_without_group }}
 
       - name: Setup and run HTTP server for testing
         if: ${{ inputs.setup_http_server == true }}
