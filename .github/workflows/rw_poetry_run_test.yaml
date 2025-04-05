@@ -130,7 +130,7 @@ jobs:
           poetry --version
 
       - name: Build Python runtime environment by Poetry
-        if: ${{ inputs.install_dependency_with_group != '' || inputs.install_dependency_without_group != '' }}
+        if: ${{ inputs.install_dependency_with_group == '' && inputs.install_dependency_without_group == '' }}
         working-directory: ${{ inputs.test_working_directory }}
         run: |
           poetry install
