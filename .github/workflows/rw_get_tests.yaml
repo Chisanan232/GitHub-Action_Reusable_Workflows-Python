@@ -56,6 +56,7 @@ jobs:
 
       - name: Download shell script for getting path of all test modules
         if: ${{ inputs.use_customized_shell != true }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/get-all-tests.sh --output ${{ inputs.shell_path }}
 
       - id: set-matrix
