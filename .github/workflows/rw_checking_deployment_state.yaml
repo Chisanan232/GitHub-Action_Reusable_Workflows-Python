@@ -73,7 +73,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PyMock-Server from PyPI
+      - name: Install ${{ inputs.library-name }} from PyPI
         working-directory: ${{ inputs.working-directory }}
         run: |
           python3 -m pip install --upgrade pip
@@ -81,7 +81,7 @@ jobs:
           python3 ./scripts/ci/install_library.py --library '${{ inputs.library-name }}'
           pip3 list
 
-      - name: Install Python dependencies about Poetry
+      - name: Check deployment state by software versino info
         id: checking_version_update_state
         working-directory: ${{ inputs.working-directory }}
         run: |
