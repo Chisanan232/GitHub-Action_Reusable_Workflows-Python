@@ -45,16 +45,14 @@ jobs:
         shell: bash
         run: |
           echo "[DEBUG] running state: ${{ needs.check-deployment-state_change.outputs.version_update_state }}"
-          if ( "${{ needs.check-deployment-state_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE" )
-          {
+          if [ $(echo "${{ needs.check-deployment-state_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE") ];
+          then
               echo "It runs fail as expect. Test PASS."
               exit 0
-          }
           else
-          {
               echo "It runs success as unexpect. Test FAIL."
               exit 1
-          }
+          fi
 
 #  Test version won't change
   check-deployment-state_not_change:
@@ -72,13 +70,11 @@ jobs:
         shell: bash
         run: |
           echo "[DEBUG] running state: ${{ needs.check-deployment-state_not_change.outputs.version_update_state }}"
-          if ( "${{ needs.check-deployment-state_not_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE" )
-          {
+          if [ $(echo "${{ needs.check-deployment-state_not_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE") ];
+          then
               echo "It runs success as unexpect. Test FAIL."
               exit 1
-          }
           else
-          {
               echo "It runs fail as expect. Test PASS."
               exit 0
-          }
+          fi
