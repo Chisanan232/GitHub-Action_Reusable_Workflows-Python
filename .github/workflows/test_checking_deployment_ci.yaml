@@ -1,4 +1,4 @@
-name: Python project CI Test (one-test)
+name: End-to-End test about checking deployment state
 
 on:
   push:
