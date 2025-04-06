@@ -5,6 +5,7 @@ from importlib.metadata import PackageNotFoundError, version
 _RELEASE_TYPE: str = "python-package"
 _PyPI_LIB_NAME: str = os.getenv("PyPI_LIBRARY_NAME")
 _SRC_LIB_NAME: str = os.getenv("LIBRARY_SOURCE_CODE_PATH")
+_DEFAULT_VERSION: str = os.getenv("DEFAULT_VERSION") or "0.0.0"
 _SOFTWARE_VERSION_FORMAT: str = "general-3"
 # NOTE: If you're developing or testing something, you could turn this *dry run mode* as *true*
 _DRY_RUN_MODE: str = "false"
@@ -15,7 +16,7 @@ def get_lib_ver() -> str:
         return version(_PyPI_LIB_NAME)
     except PackageNotFoundError:
         # Doesn't have the Python package
-        return "0.0.0"
+        return _DEFAULT_VERSION
 
 
 def get_current_lib_ver() -> str:

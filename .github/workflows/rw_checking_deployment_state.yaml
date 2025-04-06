@@ -7,6 +7,7 @@
 #     * working-directory: The working directory for this CI running.
 #     * library-name: The target library name for checking the version info.
 #     * library-source-code-path: The source code path of target library to check.
+#     * library-default-version: The default value of software version if it cannot get the software version info from installed library.
 #
 # Workflow running output:
 #     * version_update_state: the checking result for judging deployment.
@@ -38,6 +39,11 @@ on:
         required: true
         type: string
         default: ''
+      library-default-version:
+        description: "The default value of software version if it cannot get the software version info from installed library."
+        required: true
+        type: string
+        default: '0.0.0'
     outputs:
       version_update_state:
         description: "The version update state."
@@ -85,3 +91,4 @@ jobs:
         env:
           PyPI_LIBRARY_NAME: ${{ inputs.library-name }}
           LIBRARY_SOURCE_CODE_PATH: ${{ inputs.library-source-code-path }}
+          DEFAULT_VERSION: ${{ inputs.library-default-version }}
