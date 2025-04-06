@@ -1,0 +1,82 @@
+name: Python project CI Test (one-test)
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+#     The workflow self.
+      - ".github/workflows/test_checking_deployment_ci.yaml"
+#     The shell script only be used by this workflow.
+      - "scripts/ci/check_getting_output.sh"
+#     The shell scripts or actions this workflow would use.
+      - ".github/workflows/rw_checking_deployment_state.yaml"
+      - "scripts/ci/deployment_checking.py"
+      - "scripts/ci/install_library.py"
+      - "scripts/ci/generate-software-version.sh"
+
+  pull_request:
+    branches:
+      - "master"
+    paths:
+#     The workflow self.
+      - ".github/workflows/test_checking_deployment_ci.yaml"
+#     The shell script only be used by this workflow.
+      - "scripts/ci/check_getting_output.sh"
+#     The shell scripts or actions this workflow would use.
+      - ".github/workflows/rw_checking_deployment_state.yaml"
+      - "scripts/ci/deployment_checking.py"
+      - "scripts/ci/install_library.py"
+      - "scripts/ci/generate-software-version.sh"
+
+jobs:
+#  Test version change
+  check-deployment-state_change:
+    uses: ./.github/workflows/rw_checking_deployment_state.yaml
+    with:
+      library-name: pymock-api
+      library-source-code-path: ./test_gh_workflow
+
+  varify-deployment-state_change-result:
+    needs: [check-deployment-state_change]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the deployment state checking result
+        run: |
+          echo "[DEBUG] running state: ${{ needs.check-deployment-state_change.outputs.version_update_state }}"
+          if ( "${{ needs.check-deployment-state_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE" )
+          {
+              echo "It runs fail as expect. Test PASS."
+              exit 0
+          }
+          else
+          {
+              echo "It runs success as unexpect. Test FAIL."
+              exit 1
+          }
+
+#  Test version won't change
+  check-deployment-state_not_change:
+    uses: ./.github/workflows/rw_checking_deployment_state.yaml
+    with:
+      library-name: pymock-api
+      library-source-code-path: ./for_deployment_checking_ci_only
+      library-default-version: '0.2.0'
+
+  varify-deployment-state_not_change-result:
+    needs: [check-deployment-state_not_change]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the deployment state checking result
+        run: |
+          echo "[DEBUG] running state: ${{ needs.check-deployment-state_not_change.outputs.version_update_state }}"
+          if ( "${{ needs.check-deployment-state_not_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE" )
+          {
+              echo "It runs success as unexpect. Test FAIL."
+              exit 1
+          }
+          else
+          {
+              echo "It runs fail as expect. Test PASS."
+              exit 0
+          }
