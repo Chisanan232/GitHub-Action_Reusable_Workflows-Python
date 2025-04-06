@@ -85,9 +85,13 @@ jobs:
         id: checking_version_update_state
         working-directory: ${{ inputs.working-directory }}
         run: |
-          version_update_state=$(python3 ./scripts/ci/deployment_checking.py)
-          echo "🧾 Python project version update state: $version_update_state"
-          echo "version_update_state=$(echo $version_update_state)" >> $GITHUB_OUTPUT
+          script_running_result=$(python3 ./scripts/ci/deployment_checking.py)
+          echo "🧾 Python project version update state: $script_running_result"
+
+          version_update_result=$(echo "$script_running_result" | grep -E "\[INFO\] ((VERSION UPDATE)|(NO VERSION UPDATE))" | grep -E -o "((VERSION UPDATE)|(NO VERSION UPDATE))")
+          echo "🧑‍💻 Truly version state: $version_update_result"
+
+          echo "version_update_state=$(echo $version_update_result)" >> $GITHUB_OUTPUT
         env:
           PyPI_LIBRARY_NAME: ${{ inputs.library-name }}
           LIBRARY_SOURCE_CODE_PATH: ${{ inputs.library-source-code-path }}
