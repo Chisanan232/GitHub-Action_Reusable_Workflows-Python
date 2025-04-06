@@ -47,11 +47,11 @@ jobs:
           echo "[DEBUG] running state: ${{ needs.check-deployment-state_change.outputs.version_update_state }}"
           if [ $(echo "${{ needs.check-deployment-state_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE") ];
           then
-              echo "It runs fail as expect. Test PASS."
-              exit 0
-          else
-              echo "It runs success as unexpect. Test FAIL."
+              echo "The checking result is not as expect. Test FAIL."
               exit 1
+          else
+              echo "The checking result as expect. Test PASS."
+              exit 0
           fi
 
 #  Test version won't change
@@ -72,9 +72,9 @@ jobs:
           echo "[DEBUG] running state: ${{ needs.check-deployment-state_not_change.outputs.version_update_state }}"
           if [ $(echo "${{ needs.check-deployment-state_not_change.outputs.version_update_state }}" -eq "NO VERSION UPDATE") ];
           then
-              echo "It runs success as unexpect. Test FAIL."
+              echo "The checking result is not as expect. Test FAIL."
               exit 1
           else
-              echo "It runs fail as expect. Test PASS."
+              echo "The checking result as expect. Test PASS."
               exit 0
           fi
