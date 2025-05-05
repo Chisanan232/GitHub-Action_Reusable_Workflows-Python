@@ -3,7 +3,6 @@ name: Nested Python project with Poetry CI Test (multi-tests)
 on:
   pull_request:
     branches:
-      - "develop**"
       - "master"
     paths:
 #     The workflow self.
