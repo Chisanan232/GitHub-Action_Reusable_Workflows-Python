@@ -7,3 +7,4 @@
 
 1. Update the actions dependencies about SonarQube scan.
 2. Deprecate and remove the runtime environment usage for Ubuntu 20.04.
+3. Improve the trigger condition of all the test workflow for saving the CI resource.
