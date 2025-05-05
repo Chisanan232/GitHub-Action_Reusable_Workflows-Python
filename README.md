@@ -173,6 +173,13 @@ is provided by previous workflow? That is all testing items.
 | _rw_run_test.yaml_                | Command lines like ``pip``, ``python``, etc       |
 | _poetry_run_test_via_pytest.yaml_ | Use ``poetry`` feature or run command lines in it |
 
+And for the poetry reusable workflow, it has 2 parameters another doesn't have:
+
+| Workflow                           | Running way                                                                                                                                                    |
+|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| _install_dependency_with_group_    | Install the dependency by Poetry configuration with dependency group setting. This parameter receive the dependency group naming. (multiple values allowed)    |
+| _install_dependency_without_group_ | Install the dependency by Poetry configuration without dependency group setting. This parameter receive the dependency group naming. (multiple values allowed) |
+
 
 <hr>
 
