@@ -55,12 +55,12 @@ on:
         type: string
         default: './'
       install_dependency_with_group:
-        description: "Install the dependency by Poetry configuration with dependency group setting. This parameter receive the dependency group naming."
+        description: "Install the dependency by Poetry configuration with dependency group setting. This parameter receive the dependency group naming. (multiple values allowed)"
         type: string
         required: false
         default: ''
       install_dependency_without_group:
-        description: "Install the dependency by Poetry configuration without dependency group setting. This parameter receive the dependency group naming."
+        description: "Install the dependency by Poetry configuration without dependency group setting. This parameter receive the dependency group naming. (multiple values allowed)"
         type: string
         required: false
         default: ''
