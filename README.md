@@ -377,7 +377,7 @@ No, nothing at all.
 
 <hr>
 
-### _rw_checking_deployment_state_
+### _rw_checking_deployment_state.yaml_
 
 * Description: Before truly deployment, e.g., release and push Python package to PyPI, it would check the release
 relative information to judge whether it should release or not. 
