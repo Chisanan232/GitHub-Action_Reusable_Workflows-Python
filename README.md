@@ -43,6 +43,7 @@ The usage of each workflow template.
 * [_rw_organize_test_cov_reports.yaml_](#rw_organize_test_cov_reportsyaml)
 * [_rw_upload_test_cov_report.yaml_](#rw_upload_test_cov_reportyaml)
 * [_rw_pre-building_test.yaml_](#rw_pre-building_testyaml)
+* [_rw_checking_deployment_state.yaml_](#rw_checking_deployment_stateyaml)
 * [_rw_build_git-tag_and_create_github-release.yaml_](#rw_build_git-tag_and_create_github-releaseyaml)
 * [_rw_push_pypi.yaml_](#rw_push_pypiyaml)
 
@@ -367,6 +368,96 @@ No, nothing at all.
 ```
 
 <hr>
+
+### _rw_checking_deployment_state_
+
+* Description: Before truly deployment, e.g., release and push Python package to PyPI, it would check the release
+relative information to judge whether it should release or not. 
+* Requirement: The target project must has one Python module named **_\_\_pkg_info\_\_.py_**. And the content of it
+should be like following:
+```python
+__version__ = "0.2.3"
+```
+* How to trigger it?: 
+
+It would use the package info module to get the current Package version info. And it would also try to install the 
+Python package from PyPI to get the latest version of it. Finally, it would use this 2 version info to compare whether 
+the project current version is same as the version in PyPI or not. If it is, it would skip. But if it isn't, it would 
+start to run deployment process to release.
+
+> [!NOTE]
+> For the newborn project, it won't be released to PyPI before, it 
+> would set its software version as 0.0.0 at default.       
+
+* Trigger condition:
+
+  1. Python file **_\_\_pkg_info\_\_.py_** has been updated.
+  2. The property **_\_\_version\_\__** has been updated. (aka the software version value)
+  3. The software version value is different with the version in PyPI.
+
+* Options:
+
+| option name              | data type | optional or required               | function content                                                                                         |
+|--------------------------|-----------|------------------------------------|----------------------------------------------------------------------------------------------------------|
+| working-directory        | string    | Optional, Default value is _./_    | The working directory for this CI running.                                                               |
+| library-name             | string    | Required                           | The target library name for checking the version info.                                                   |
+| library-source-code-path | string    | Required_                          | The source code path of target library to check.                                                         |
+| library-default-version  | string    | Optional, Default value is _0.0.0_ | The default value of software version if it cannot get the software version info from installed library. |
+
+* Output: 
+
+Yes, it has running result output. It would output the updating state about whether the version has been updated or not.
+And the CI workflow after-process could use this output result to judge whether it should run the deployment process or not.
+
+| Upload-Artifact name | description                                                                                   |
+|----------------------|-----------------------------------------------------------------------------------------------|
+| version_update_state | The version update state. It only has 2 states: **VERSION UPDATE** and **NO VERSION UPDATE**. |
+
+* How to use it?
+
+    * **_cd.yaml_** usage case:
+
+    ```yaml
+    name: CD
+    
+    on:
+      # Run the deployment about publishing the Python source code to PyPI.
+      push:
+        branches:
+          - "master"
+        paths:
+    #     This deployment workflow would only be triggered by file change of module *__pkg_info__* because it has the package version info.
+    #      - ".github/workflows/cd.yaml"    # For test or emergency scenario only
+          - "**/__pkg_info__.py"
+    
+    jobs:
+      check_version-state:
+    #    name: Check the version update state
+        uses: ./.github/workflows/rw_checking_deployment_state.yaml
+        with:
+          library-name: your-python-package-name
+          library-source-code-path: ./your_source_code_directory
+    
+      push_python_pkg_to_pypi:
+    #    name: Check about it could work finely by installing the Python package with setup.py file
+        needs: check_version-state
+        if: ${{ needs.check_version-state.outputs.version_update_state == 'VERSION UPDATE' }}
+        uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_push_pypi.yaml@v7.2
+        with:
+          build-type: poetry
+          release-type: ${{ needs.build_git-tag_and_create_github-release.outputs.python_release_version }}
+          push-to-PyPI: official
+        secrets:
+          PyPI_user: ${{ secrets.PYPI_USERNAME }}
+          PyPI_token: ${{ secrets.PYPI_PASSWORD }}
+    ```
+
+The badge it generates: 
+
+[![Release](https://img.shields.io/github/release/Chisanan232/GitHub-Action-Template-Python.svg?label=Release&logo=github)](https://github.com/Chisanan232/GitHub-Action-Template-Python/releases)
+
+<hr>
+
 
 ### _rw_build_git-tag_and_create_github-release.yaml_
 
