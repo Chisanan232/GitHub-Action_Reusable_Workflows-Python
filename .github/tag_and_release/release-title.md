@@ -1,1 +1,1 @@
-v7.2.0 🍻🍾 - Fix broken CI process about expired old versions of artifact actions
+v7.3.0 🍻 - Improve the reusable workflows to be more flexible in usage
