@@ -3,7 +3,6 @@ name: GitHub Action reusable workflow project CI Test
 on:
   push:
     branches:
-      - "develop**"
       - "master"
     paths:
 #     The workflow self.
@@ -17,7 +16,6 @@ on:
 
   pull_request:
     branches:
-      - "develop**"
       - "master"
     paths:
 #     The workflow self.

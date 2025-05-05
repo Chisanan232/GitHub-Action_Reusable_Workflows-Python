@@ -450,7 +450,7 @@ And the CI workflow after-process could use this output result to judge whether 
     #    name: Check about it could work finely by installing the Python package with setup.py file
         needs: check_version-state
         if: ${{ needs.check_version-state.outputs.version_update_state == 'VERSION UPDATE' }}
-        uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_push_pypi.yaml@v7.2
+        uses: ./.github/workflows/rw_push_pypi.yaml
         with:
           build-type: poetry
           release-type: ${{ needs.build_git-tag_and_create_github-release.outputs.python_release_version }}
