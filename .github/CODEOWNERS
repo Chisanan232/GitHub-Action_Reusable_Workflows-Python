@@ -1,0 +1,31 @@
+# CODEOWNERS file for GitHub Action Reusable Workflows Python project
+# Each line is a file pattern followed by one or more owners.
+
+# These owners will be the default owners for everything in the repo
+*                           @Chisanan232
+
+# Workflow files
+/.github/workflows/         @Chisanan232
+
+# Scripts directory
+/scripts/                   @Chisanan232
+
+# Test files
+/test/                      @Chisanan232
+
+# CI/CD configuration
+/.github/                   @Chisanan232
+
+# Core project files
+/pyproject.toml             @Chisanan232
+/poetry.lock                @Chisanan232
+/setup.py                   @Chisanan232
+
+# Documentation
+/README.md                  @Chisanan232
+/LICENSE                    @Chisanan232
+
+# Configuration files
+/.coveragerc                @Chisanan232
+/pytest.ini                 @Chisanan232
+/sonar-project.properties   @Chisanan232
