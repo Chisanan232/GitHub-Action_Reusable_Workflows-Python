@@ -5,6 +5,7 @@
 #
 # Workflow input parameters:
 #     * working-directory: The working directory for this CI running.
+#     * run_with_python_version: The Python version you want to use in this workflow.
 #     * library-name: The target library name for checking the version info.
 #     * library-source-code-path: The source code path of target library to check.
 #     * library-default-version: The default value of software version if it cannot get the software version info from installed library.
@@ -29,6 +30,11 @@ on:
         required: false
         type: string
         default: './'
+      run_with_python_version:
+        description: "The Python version you want to use in this workflow."
+        type: string
+        required: false
+        default: '3.12'
       library-name:
         description: "The target library name for checking the version info."
         required: true
@@ -68,10 +74,10 @@ jobs:
           echo "Download shell script for checking the deployment state ..."
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/deployment_checking.py --output ./scripts/ci/deployment_checking.py
 
-      - name: Install Python 3.12
+      - name: Install Python ${{ inputs.run_with_python_version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ inputs.run_with_python_version }}
 
       - name: Install ${{ inputs.library-name }} from PyPI
         working-directory: ${{ inputs.working-directory }}
