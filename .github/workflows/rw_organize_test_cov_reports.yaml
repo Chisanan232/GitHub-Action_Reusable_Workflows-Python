@@ -69,6 +69,8 @@ jobs:
       - name: Combine all testing coverage data files with test type and runtime OS, and convert to XML format file finally
         working-directory: ${{ inputs.test_working_directory }}
         run: |
+          mkdir -p ./scripts/ci/
+          echo "Download shell script for combining coverage reports ..."
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/combine_coverage_reports.sh --output ./scripts/ci/combine_coverage_reports.sh
           bash ./scripts/ci/combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
 
