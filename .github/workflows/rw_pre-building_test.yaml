@@ -6,6 +6,7 @@
 # Workflow input parameters:
 #     * General arguments:
 #         * build-type: Use one specific way to build and package Python code. It has 2 type options: 'setuptools' or 'poetry'.
+#         * run_with_python_version: The Python version you want to use in this workflow.
 #         * python_package_name: The Python package name.
 #         * test_shell: Run command line(s) for testing.
 #         * test_shell_in_python: Run Python code as script for testing.
@@ -26,6 +27,11 @@ on:
         type: string
         required: false
         default: 'setuptools'
+      run_with_python_version:
+        description: "The Python version you want to use in this workflow."
+        type: string
+        required: false
+        default: '3.12'
       python_package_name:
         description: "The Python package name."
         required: true
@@ -52,10 +58,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.10 in Ubuntu OS
+      - name: Setup Python ${{ inputs.run_with_python_version }} in Ubuntu OS
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ inputs.run_with_python_version }}
 
       - name: Install Python dependencies by Setuptools
         if: ${{ inputs.build-type == 'setuptools' }}

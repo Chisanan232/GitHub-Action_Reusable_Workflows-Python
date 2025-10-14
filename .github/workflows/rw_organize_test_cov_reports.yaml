@@ -5,6 +5,7 @@
 #
 # Workflow input parameters:
 #     * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
+#     * run_with_python_version: The Python version you want to use in this workflow.
 #     * test_working_directory: The working directory for test running.
 #
 # Workflow running output:
@@ -25,6 +26,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         type: string
         required: true
+      run_with_python_version:
+        description: "The Python version you want to use in this workflow."
+        type: string
+        required: false
+        default: '3.12'
       test_working_directory:
         description: "The working directory for test running."
         required: false
@@ -46,10 +52,10 @@ jobs:
           path: ${{ inputs.test_working_directory }}
           merge-multiple: true
 
-      - name: Setup Python 3.10 in Ubuntu OS
+      - name: Setup Python ${{ inputs.run_with_python_version }} in Ubuntu OS
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ inputs.run_with_python_version }}
 
       - name: Install Python tool 'coverage'
         working-directory: ${{ inputs.test_working_directory }}
@@ -63,6 +69,8 @@ jobs:
       - name: Combine all testing coverage data files with test type and runtime OS, and convert to XML format file finally
         working-directory: ${{ inputs.test_working_directory }}
         run: |
+          mkdir -p ./scripts/ci/
+          echo "Download shell script for combining coverage reports ..."
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/combine_coverage_reports.sh --output ./scripts/ci/combine_coverage_reports.sh
           bash ./scripts/ci/combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
 
