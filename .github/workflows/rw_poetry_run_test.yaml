@@ -114,7 +114,7 @@ jobs:
         test-path: ${{fromJson(inputs.all_test_items_paths)}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Python ${{ inputs.python_version }}
         uses: actions/setup-python@v5
