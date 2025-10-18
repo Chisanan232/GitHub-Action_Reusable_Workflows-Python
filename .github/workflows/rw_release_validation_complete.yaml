@@ -77,7 +77,7 @@ jobs:
           fi
 
   intent-parse:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_release_intent.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_release_intent.yaml@master
     needs: config
     with:
       level: ${{ inputs.level || needs.config.outputs.level }}
