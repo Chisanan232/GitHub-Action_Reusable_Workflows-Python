@@ -425,7 +425,7 @@ jobs:
       docker-run-options: ${{ needs.config.outputs.docker_run_options }}
 
   release_docs:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docs_operations.yaml@master
     needs: [config, intent, prepare_docs_matrix, bump_version, build_git-tag_and_create_github-release]
     if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docs != 'skip' && needs.prepare_docs_matrix.outputs.has_sections == 'true'
     with:

@@ -133,7 +133,7 @@ jobs:
       docker-run-options: ${{ needs.config.outputs.docker_run_options }}
 
   docs-build:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docs_operations.yaml@master
     needs: [config, intent-parse]
     with:
       operation: 'test'
