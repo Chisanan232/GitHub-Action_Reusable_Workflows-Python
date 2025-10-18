@@ -125,7 +125,7 @@ jobs:
           ls -la ./scripts/ci
 
       - name: Setup Python with UV
-        uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/actions/setup-python-uv@master
+        uses: ./.github/actions/setup-python-uv
         with:
           python-version: ${{ inputs.python-version }}
           install-dependencies: 'true'
