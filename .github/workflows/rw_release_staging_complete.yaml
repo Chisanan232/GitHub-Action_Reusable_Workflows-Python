@@ -123,7 +123,7 @@ jobs:
       github_auth_token: ${{ secrets.GITHUB_TOKEN }}
 
   pypi-test:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_python_package.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_python_package.yaml@master
     needs: [config, compute-version, build_git-tag_and_create_github-release]
     with:
       operation: 'publish-testpypi'
