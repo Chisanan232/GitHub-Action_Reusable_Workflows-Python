@@ -87,7 +87,7 @@ jobs:
       notes: 'Validation test run'
 
   build_git-tag_and_create_github-release:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
     needs: [config, intent-parse]
     with:
       version: ${{ needs.config.outputs.validation_version }}  # Test version for validation

@@ -370,7 +370,7 @@ jobs:
           path: docs_updated.txt
 
   build_git-tag_and_create_github-release:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
     needs: [config, bump_version]
     with:
       version: ${{ needs.bump_version.outputs.version }}
