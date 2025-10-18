@@ -1,0 +1,312 @@
+name: Parse Project Configuration
+description: |
+  Reusable workflow to parse the enhanced project configuration from intent.yaml
+  and provide all configuration values as outputs to consuming workflows.
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: 'Path to the configuration file'
+        required: false
+        default: '.github/tag_and_release/intent.yaml'
+        type: string
+      
+    outputs:
+      # Release Control
+      do_release:
+        description: 'Whether to proceed with release'
+        value: ${{ jobs.parse-config.outputs.do_release }}
+      level:
+        description: 'Release level (auto/patch/minor/major)'
+        value: ${{ jobs.parse-config.outputs.level }}
+      notes:
+        description: 'Release notes'
+        value: ${{ jobs.parse-config.outputs.notes }}
+      
+      # Artifact Control
+      python:
+        description: 'Python artifact handling (auto/force/skip)'
+        value: ${{ jobs.parse-config.outputs.python }}
+      docker:
+        description: 'Docker artifact handling (auto/force/skip)'
+        value: ${{ jobs.parse-config.outputs.docker }}
+      docs:
+        description: 'Docs artifact handling (auto/force/skip)'
+        value: ${{ jobs.parse-config.outputs.docs }}
+      
+      # Project Configuration
+      project_name:
+        description: 'Project name'
+        value: ${{ jobs.parse-config.outputs.project_name }}
+      package_name:
+        description: 'Package name'
+        value: ${{ jobs.parse-config.outputs.package_name }}
+      base_branch:
+        description: 'Base/main branch name'
+        value: ${{ jobs.parse-config.outputs.base_branch }}
+      
+      # Git Configuration
+      git_commit_name:
+        description: 'Git commit author name'
+        value: ${{ jobs.parse-config.outputs.git_commit_name }}
+      git_commit_email:
+        description: 'Git commit author email'
+        value: ${{ jobs.parse-config.outputs.git_commit_email }}
+      
+      # Docker Configuration
+      docker_registry_dockerhub:
+        description: 'DockerHub registry URL'
+        value: ${{ jobs.parse-config.outputs.docker_registry_dockerhub }}
+      docker_registry_ghcr:
+        description: 'GitHub Container Registry URL'
+        value: ${{ jobs.parse-config.outputs.docker_registry_ghcr }}
+      docker_health_check_port:
+        description: 'Docker health check port'
+        value: ${{ jobs.parse-config.outputs.docker_health_check_port }}
+      docker_health_check_path:
+        description: 'Docker health check path'
+        value: ${{ jobs.parse-config.outputs.docker_health_check_path }}
+      docker_run_options:
+        description: 'Docker run options string for flexible container configuration'
+        value: ${{ jobs.parse-config.outputs.docker_run_options }}
+      
+      # Validation Configuration
+      validation_version:
+        description: 'Version for validation runs'
+        value: ${{ jobs.parse-config.outputs.validation_version }}
+      validation_test_version:
+        description: 'Version for validation testing'
+        value: ${{ jobs.parse-config.outputs.validation_test_version }}
+      
+      # Python Package Configuration
+      python_auth_method:
+        description: 'Python package authentication method (oidc or token)'
+        value: ${{ jobs.parse-config.outputs.python_auth_method }}
+      
+      # Documentation Configuration
+      docs_ci_cd_path:
+        description: 'CI/CD documentation path'
+        value: ${{ jobs.parse-config.outputs.docs_ci_cd_path }}
+      docs_installation_path:
+        description: 'Installation documentation path'
+        value: ${{ jobs.parse-config.outputs.docs_installation_path }}
+      docs_readme_path:
+        description: 'README file path'
+        value: ${{ jobs.parse-config.outputs.docs_readme_path }}
+      docs_preview_branch:
+        description: 'Documentation preview branch'
+        value: ${{ jobs.parse-config.outputs.docs_preview_branch }}
+
+jobs:
+  parse-config:
+    runs-on: ubuntu-latest
+    outputs:
+      # Release Control
+      do_release: ${{ steps.parse.outputs.do_release }}
+      level: ${{ steps.parse.outputs.level }}
+      notes: ${{ steps.parse.outputs.notes }}
+      
+      # Artifact Control
+      python: ${{ steps.parse.outputs.python }}
+      docker: ${{ steps.parse.outputs.docker }}
+      docs: ${{ steps.parse.outputs.docs }}
+      
+      # Project Configuration
+      project_name: ${{ steps.parse.outputs.project_name }}
+      package_name: ${{ steps.parse.outputs.package_name }}
+      base_branch: ${{ steps.parse.outputs.base_branch }}
+      
+      # Python Package Configuration
+      python_auth_method: ${{ steps.parse.outputs.python_auth_method }}
+      
+      # Git Configuration
+      git_commit_name: ${{ steps.parse.outputs.git_commit_name }}
+      git_commit_email: ${{ steps.parse.outputs.git_commit_email }}
+      
+      # Docker Configuration
+      docker_registry_dockerhub: ${{ steps.parse.outputs.docker_registry_dockerhub }}
+      docker_registry_ghcr: ${{ steps.parse.outputs.docker_registry_ghcr }}
+      docker_health_check_port: ${{ steps.parse.outputs.docker_health_check_port }}
+      docker_health_check_path: ${{ steps.parse.outputs.docker_health_check_path }}
+      docker_run_options: ${{ steps.parse.outputs.docker_run_options }}
+      
+      # Validation Configuration
+      validation_version: ${{ steps.parse.outputs.validation_version }}
+      validation_test_version: ${{ steps.parse.outputs.validation_test_version }}
+      
+      # Documentation Configuration
+      docs_ci_cd_path: ${{ steps.parse.outputs.docs_ci_cd_path }}
+      docs_installation_path: ${{ steps.parse.outputs.docs_installation_path }}
+      docs_readme_path: ${{ steps.parse.outputs.docs_readme_path }}
+      docs_preview_branch: ${{ steps.parse.outputs.docs_preview_branch }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install yq (YAML processor)
+        run: |
+          sudo wget -O /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/bin/yq
+
+      - name: Parse configuration
+        id: parse
+        run: |
+          config_file="${{ inputs.config-path }}"
+          
+          # Check if config file exists
+          if [[ ! -f "$config_file" ]]; then
+            echo "⚠️ Configuration file not found: $config_file"
+            echo "Using default values for all configuration options."
+            use_defaults=true
+          else
+            echo "✅ Found configuration file: $config_file"
+            use_defaults=false
+          fi
+          
+          # Function to get config value with fallback
+          get_config() {
+            local key="$1"
+            local default="$2"
+            
+            if [[ "$use_defaults" == "true" ]]; then
+              echo "$default"
+            else
+              local value
+              value=$(yq eval "$key" "$config_file" 2>/dev/null || echo "null")
+              
+              if [[ "$value" == "null" || "$value" == "~" || -z "$value" ]]; then
+                echo "$default"
+              else
+                echo "$value"
+              fi
+            fi
+          }
+          
+          # Parse Release Control
+          do_release=$(get_config ".release" "true")
+          level=$(get_config ".level" "auto")
+          notes=$(get_config ".notes" "Automatic release based on configuration")
+          
+          # Parse Artifact Control
+          python=$(get_config ".artifacts.python" "auto")
+          docker=$(get_config ".artifacts.docker" "auto")
+          docs=$(get_config ".artifacts.docs.mode // .artifacts.docs" "auto")
+          
+          # Parse Project Configuration
+          project_name=$(get_config ".project.name" "${{ github.event.repository.name }}")
+          package_name=$(get_config ".project.package_name" "${{ github.event.repository.name }}")
+          base_branch=$(get_config ".project.base_branch" "master")
+          
+          # Parse Python Package Configuration
+          python_auth_method=$(get_config ".python.auth_method" "oidc")
+          
+          # Parse Git Configuration
+          git_commit_name=$(get_config ".git.commit.name" "GitHub Actions Bot")
+          git_commit_email=$(get_config ".git.commit.email" "actions@github.com")
+          
+          # Parse Docker Configuration
+          docker_registry_dockerhub=$(get_config ".docker.registries.dockerhub" "docker.io")
+          docker_registry_ghcr=$(get_config ".docker.registries.ghcr" "ghcr.io")
+          docker_health_check_port=$(get_config ".docker.health_check.port" "8000")
+          docker_health_check_path=$(get_config ".docker.health_check.path" "/health")
+          
+          # Parse flexible Docker run options
+          docker_run_options=$(get_config ".docker.run_options" "-e API_TOKEN=test_token")
+
+          # Legacy support: If run_options is not set but old env var settings exist, build compatibility string
+          if [[ "$docker_run_options" == "-e API_TOKEN=test_token" ]] && [[ "$use_defaults" == "false" ]]; then
+            legacy_env_name=$(yq eval ".docker.application.env_var_name" "$config_file" 2>/dev/null || echo "null")
+            legacy_env_value=$(yq eval ".docker.application.env_var_value" "$config_file" 2>/dev/null || echo "null")
+
+            if [[ "$legacy_env_name" != "null" && "$legacy_env_value" != "null" ]]; then
+              docker_run_options="-e ${legacy_env_name}=${legacy_env_value}"
+              echo "⚠️ Using legacy docker.application.env_var_* format. Consider migrating to docker.run_options."
+            fi
+          fi
+
+          # Parse Validation Configuration
+          validation_version=$(get_config ".validation.version" "1.0.0-validation")
+          validation_test_version=$(get_config ".validation.test_version" "validation-test")
+          
+          # Parse Documentation Configuration
+          docs_ci_cd_path=$(get_config ".docs.paths.ci_cd" "docs/CI_CD.md")
+          docs_installation_path=$(get_config ".docs.paths.installation" "docs/INSTALLATION.md")
+          docs_readme_path=$(get_config ".docs.paths.readme" "README.md")
+          docs_preview_branch=$(get_config ".docs.preview.branch" "docs-preview")
+          
+          # Set outputs
+          echo "do_release=$do_release" >> $GITHUB_OUTPUT
+          echo "level=$level" >> $GITHUB_OUTPUT
+          echo "notes=$notes" >> $GITHUB_OUTPUT
+          
+          echo "python=$python" >> $GITHUB_OUTPUT
+          echo "docker=$docker" >> $GITHUB_OUTPUT
+          echo "docs=$docs" >> $GITHUB_OUTPUT
+          
+          echo "project_name=$project_name" >> $GITHUB_OUTPUT
+          echo "package_name=$package_name" >> $GITHUB_OUTPUT
+          echo "base_branch=$base_branch" >> $GITHUB_OUTPUT
+          
+          echo "python_auth_method=$python_auth_method" >> $GITHUB_OUTPUT
+          
+          echo "git_commit_name=$git_commit_name" >> $GITHUB_OUTPUT
+          echo "git_commit_email=$git_commit_email" >> $GITHUB_OUTPUT
+          
+          echo "docker_registry_dockerhub=$docker_registry_dockerhub" >> $GITHUB_OUTPUT
+          echo "docker_registry_ghcr=$docker_registry_ghcr" >> $GITHUB_OUTPUT
+          echo "docker_health_check_port=$docker_health_check_port" >> $GITHUB_OUTPUT
+          echo "docker_health_check_path=$docker_health_check_path" >> $GITHUB_OUTPUT
+          echo "docker_run_options=$docker_run_options" >> $GITHUB_OUTPUT
+          
+          echo "validation_version=$validation_version" >> $GITHUB_OUTPUT
+          echo "validation_test_version=$validation_test_version" >> $GITHUB_OUTPUT
+          
+          echo "docs_ci_cd_path=$docs_ci_cd_path" >> $GITHUB_OUTPUT
+          echo "docs_installation_path=$docs_installation_path" >> $GITHUB_OUTPUT
+          echo "docs_readme_path=$docs_readme_path" >> $GITHUB_OUTPUT
+          echo "docs_preview_branch=$docs_preview_branch" >> $GITHUB_OUTPUT
+          
+          # Display parsed configuration
+          echo ""
+          echo "📋 Parsed Configuration:"
+          echo "===================="
+          echo "Release Control:"
+          echo "  - Do Release: $do_release"
+          echo "  - Level: $level"
+          echo "  - Notes: $notes"
+          echo ""
+          echo "Artifacts:"
+          echo "  - Python: $python"
+          echo "  - Docker: $docker"
+          echo "  - Docs: $docs"
+          echo ""
+          echo "Project:"
+          echo "  - Name: $project_name"
+          echo "  - Package: $package_name"
+          echo "  - Base Branch: $base_branch"
+          echo ""
+          echo "Python Package:"
+          echo "  - Auth Method: $python_auth_method"
+          echo ""
+          echo "Git:"
+          echo "  - Commit Name: $git_commit_name"
+          echo "  - Commit Email: $git_commit_email"
+          echo ""
+          echo "Docker:"
+          echo "  - DockerHub: $docker_registry_dockerhub"
+          echo "  - GHCR: $docker_registry_ghcr"
+          echo "  - Health Port: $docker_health_check_port"
+          echo "  - Health Path: $docker_health_check_path"
+          echo "  - Run Options: $docker_run_options"
+          echo ""
+          echo "Validation:"
+          echo "  - Version: $validation_version"
+          echo "  - Test Version: $validation_test_version"
+          echo ""
+          echo "Documentation:"
+          echo "  - CI/CD Path: $docs_ci_cd_path"
+          echo "  - Installation Path: $docs_installation_path"
+          echo "  - README Path: $docs_readme_path"
+          echo "  - Preview Branch: $docs_preview_branch"
