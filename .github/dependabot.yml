@@ -11,3 +11,42 @@ updates:
       - "dependencies"
     commit-message:
       prefix: ⬆
+
+  # Docusaurus (TSX)
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "daily"
+    labels:
+      - "🔍 enhancement"
+      - "👨🏻‍🎨 tsx"
+      - "📑 documentation"
+      - "dependencies"
+    allow:
+      - dependency-type: "development"
+    commit-message:
+      prefix: ⬆
+    groups:
+      security-patches:
+        applies-to: security-updates
+        patterns:
+          - "*"                  # all the security patches in this group
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+      tooling:
+        applies-to: version-updates
+        patterns:
+          - "webpack*"
+          - "eslint*"
+          - "vite*"
+          - "mermaid"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+    # recommend：let Dependabot modify config package.json directly (not only adjust lockfile)
+    versioning-strategy: increase
