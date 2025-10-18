@@ -395,7 +395,7 @@ jobs:
 
   release_docker_hub:
     name: Release to DockerHub
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, intent, bump_version, build_git-tag_and_create_github-release]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true' && needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
     secrets:
@@ -412,7 +412,7 @@ jobs:
 
   release_docker_ghcr:
     name: Release to GHCR
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, intent, bump_version, build_git-tag_and_create_github-release]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true' && needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
     with:

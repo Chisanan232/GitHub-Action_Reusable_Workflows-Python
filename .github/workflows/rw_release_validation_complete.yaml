@@ -104,7 +104,7 @@ jobs:
 
   docker-build-dockerhub:
     name: Validate DockerHub Build
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, build_git-tag_and_create_github-release]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
@@ -119,7 +119,7 @@ jobs:
 
   docker-build-ghcr:
     name: Validate GHCR Build
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, build_git-tag_and_create_github-release]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
@@ -141,7 +141,7 @@ jobs:
 
   supply-chain-loopback:
     name: Security Scan (Supply Chain)
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, docker-build-dockerhub, docker-build-ghcr]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:

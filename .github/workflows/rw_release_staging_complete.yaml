@@ -137,7 +137,7 @@ jobs:
 
   dockerhub-rc:
     name: Staging Release to DockerHub
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, compute-version, build_git-tag_and_create_github-release]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     secrets:
@@ -156,7 +156,7 @@ jobs:
 
   ghcr-rc:
     name: Staging Release to GHCR
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
     needs: [config, check-dockerfile, compute-version, build_git-tag_and_create_github-release]
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
