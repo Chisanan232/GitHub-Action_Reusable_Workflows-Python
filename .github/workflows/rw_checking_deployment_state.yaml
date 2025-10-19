@@ -75,7 +75,7 @@ jobs:
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/deployment_checking.py --output ./scripts/ci/deployment_checking.py
 
       - name: Install Python ${{ inputs.run_with_python_version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.run_with_python_version }}
 
