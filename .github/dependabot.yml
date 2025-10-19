@@ -12,6 +12,19 @@ updates:
     commit-message:
       prefix: ⬆
 
+  # Python (for CI scripts only)
+  - package-ecosystem: "uv"
+    directory: "/scripts"
+    schedule:
+      interval: "daily"
+    labels:
+      - "🔍 enhancement"
+      - "🐍 python"
+      - "dependencies"
+    commit-message:
+      prefix: ⬆
+
+
   # Docusaurus (TSX)
   - package-ecosystem: "npm"
     directory: "/docs"

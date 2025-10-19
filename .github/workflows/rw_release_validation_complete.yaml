@@ -1,0 +1,229 @@
+# Centralized Complete Release Validation Workflow
+# This reusable workflow contains all the logic for the release validation process
+name: Complete Release Validation Process
+
+on:
+  workflow_call:
+    inputs:
+      level:
+        description: 'Release level to test (auto, patch, minor, major)'
+        required: false
+        default: 'auto'
+        type: string
+      python:
+        description: 'Python package validation (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      docker:
+        description: 'Docker image validation (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      docs:
+        description: 'Documentation validation (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+    outputs:
+      validation_passed:
+        description: 'Whether all validation checks passed'
+        value: ${{ jobs.validation-summary.outputs.success }}
+      intent_parsed:
+        description: 'Release intent parsing result'
+        value: ${{ jobs.intent-parse.result }}
+      python_validated:
+        description: 'Python package validation result'
+        value: ${{ jobs.python-build-check.result }}
+      docker_validated:
+        description: 'Docker validation result'
+        value: ${{ jobs.check-dockerfile.outputs.has_dockerfile == 'true' && jobs.docker-build-dockerhub.result == 'success' && jobs.docker-build-ghcr.result == 'success' || jobs.check-dockerfile.outputs.has_dockerfile == 'false' }}
+      docs_validated:
+        description: 'Documentation validation result'
+        value: ${{ jobs.docs-build.result }}
+      security_validated:
+        description: 'Security validation result'
+        value: ${{ jobs.check-dockerfile.outputs.has_dockerfile == 'true' && jobs.supply-chain-loopback.result == 'success' || jobs.check-dockerfile.outputs.has_dockerfile == 'false' }}
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write  # For cosign keyless signing
+
+jobs:
+  # Parse project configuration from intent.yaml
+  config:
+    name: Parse Configuration
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+
+  check-dockerfile:
+    name: Check Dockerfile Exists
+    runs-on: ubuntu-latest
+    outputs:
+      has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Check for Dockerfile
+        id: check
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "✅ Dockerfile found"
+            echo "has_dockerfile=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ No Dockerfile found - Docker processes will be skipped"
+            echo "has_dockerfile=false" >> $GITHUB_OUTPUT
+          fi
+
+  intent-parse:
+    uses: ./.github/workflows/rw_parse_release_intent.yaml
+    needs: config
+    with:
+      level: ${{ inputs.level || needs.config.outputs.level }}
+      python: ${{ inputs.python || needs.config.outputs.python }}
+      docker: ${{ inputs.docker || needs.config.outputs.docker }}
+      docs: ${{ inputs.docs || needs.config.outputs.docs }}
+      notes: 'Validation test run'
+
+  build_git-tag_and_create_github-release:
+    uses: ./.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml
+    needs: [config, intent-parse]
+    with:
+      version: ${{ needs.config.outputs.validation_version }}  # Test version for validation
+      debug_mode: true
+    secrets:
+      github_auth_token: ${{ secrets.GITHUB_TOKEN }}
+
+  python-build-check:
+    uses: ./.github/workflows/rw_python_package.yaml
+    needs: [config, build_git-tag_and_create_github-release]
+    with:
+      operation: 'test'
+      artifact-name: 'validation-python-package'
+
+  docker-build-dockerhub:
+    name: Validate DockerHub Build
+    uses: ./.github/workflows/rw_docker_operations.yaml
+    needs: [config, check-dockerfile, build_git-tag_and_create_github-release]
+    if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
+    with:
+      operation: 'test'
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
+      image-name: ${{ github.repository }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
+      enable-signing: true
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
+
+  docker-build-ghcr:
+    name: Validate GHCR Build
+    uses: ./.github/workflows/rw_docker_operations.yaml
+    needs: [config, check-dockerfile, build_git-tag_and_create_github-release]
+    if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
+    with:
+      operation: 'test'
+      registry: ${{ needs.config.outputs.docker_registry_ghcr }}
+      image-name: ${{ github.repository }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
+      enable-signing: true
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
+
+  docs-build:
+    uses: ./.github/workflows/rw_docs_operations.yaml
+    needs: [config, intent-parse]
+    with:
+      operation: 'test'
+      upload-artifacts: true
+
+  supply-chain-loopback:
+    name: Security Scan (Supply Chain)
+    uses: ./.github/workflows/rw_docker_operations.yaml
+    needs: [config, check-dockerfile, docker-build-dockerhub, docker-build-ghcr]
+    if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
+    with:
+      operation: 'security-scan'
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}  # Use DockerHub build for security scan
+      image-name: ${{ github.repository }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      enable-sbom: true
+      enable-signing: true
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
+
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [config, check-dockerfile, intent-parse, python-build-check, docker-build-dockerhub, docker-build-ghcr, docs-build, supply-chain-loopback]
+    if: always()
+    outputs:
+      success: ${{ steps.summary.outputs.success }}
+    steps:
+      - name: Check validation results
+        id: summary
+        run: |
+          echo "=== Release Validation Summary ==="
+          echo ""
+          echo "Dockerfile Check: ${{ needs.check-dockerfile.outputs.has_dockerfile == 'true' && '✅ Found' || '⚠️ Not Found (Docker skipped)' }}"
+          echo "Intent Parsing: ${{ needs.intent-parse.result }}"
+          echo "Python Build: ${{ needs.python-build-check.result }}"
+          
+          # Check if Docker processes were run
+          HAS_DOCKERFILE="${{ needs.check-dockerfile.outputs.has_dockerfile }}"
+          if [ "$HAS_DOCKERFILE" = "true" ]; then
+            echo "DockerHub Build: ${{ needs.docker-build-dockerhub.result }}"
+            echo "GHCR Build: ${{ needs.docker-build-ghcr.result }}"
+            echo "Supply Chain: ${{ needs.supply-chain-loopback.result }}"
+          else
+            echo "DockerHub Build: ⏭️ Skipped (no Dockerfile)"
+            echo "GHCR Build: ⏭️ Skipped (no Dockerfile)"
+            echo "Supply Chain: ⏭️ Skipped (no Dockerfile)"
+          fi
+          
+          echo "Docs Build: ${{ needs.docs-build.result }}"
+          echo ""
+          
+          # Validate results based on whether Docker processes were expected
+          INTENT_OK="${{ needs.intent-parse.result == 'success' }}"
+          PYTHON_OK="${{ needs.python-build-check.result == 'success' }}"
+          DOCS_OK="${{ needs.docs-build.result == 'success' }}"
+          
+          if [ "$HAS_DOCKERFILE" = "true" ]; then
+            # Docker processes should have run - validate them
+            DOCKER_HUB_OK="${{ needs.docker-build-dockerhub.result == 'success' }}"
+            DOCKER_GHCR_OK="${{ needs.docker-build-ghcr.result == 'success' }}"
+            SUPPLY_CHAIN_OK="${{ needs.supply-chain-loopback.result == 'success' }}"
+            
+            if [[ "$INTENT_OK" == "true" && "$PYTHON_OK" == "true" && \
+                  "$DOCKER_HUB_OK" == "true" && "$DOCKER_GHCR_OK" == "true" && \
+                  "$DOCS_OK" == "true" && "$SUPPLY_CHAIN_OK" == "true" ]]; then
+              echo "✅ All validation checks passed! Release process is ready."
+              echo "success=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Some validation checks failed. Please review the logs above."
+              echo "success=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          else
+            # No Docker processes - only validate non-Docker components
+            if [[ "$INTENT_OK" == "true" && "$PYTHON_OK" == "true" && "$DOCS_OK" == "true" ]]; then
+              echo "✅ All validation checks passed! Release process is ready."
+              echo "⚠️ Note: Docker validation was skipped (no Dockerfile found)"
+              echo "success=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Some validation checks failed. Please review the logs above."
+              echo "success=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+          
+          echo ""
+          echo "Release Configuration:"
+          echo "- Do Release: ${{ needs.intent-parse.outputs.do_release }}"
+          echo "- Level: ${{ needs.intent-parse.outputs.level }}"
+          echo "- Python: ${{ needs.intent-parse.outputs.python }}"
+          echo "- Docker: ${{ needs.intent-parse.outputs.docker }}"
+          echo "- Docs: ${{ needs.intent-parse.outputs.docs }}"
+          echo "- Notes: ${{ needs.intent-parse.outputs.notes }}"
