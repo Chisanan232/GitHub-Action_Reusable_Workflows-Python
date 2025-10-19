@@ -39,7 +39,7 @@ jobs:
   # Call the centralized complete staging release workflow
   staging:
     name: Complete Staging Release Process
-    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_staging_complete.yaml@master
+    uses: ./.github/workflows/rw_release_staging_complete.yaml
     with:
       level: ${{ inputs.level }}
     secrets:
