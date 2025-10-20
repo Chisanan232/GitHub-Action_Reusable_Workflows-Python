@@ -79,6 +79,11 @@ jobs:
       docs_strategy: ${{ steps.intent.outputs.docs_strategy }}
       notes: ${{ steps.intent.outputs.notes }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       - name: Download CI script files if not present
         shell: bash
         run: |
