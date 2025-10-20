@@ -70,7 +70,7 @@ jobs:
           ref: ${{ inputs.checkout-sha != '' && inputs.checkout-sha || (github.event_name == 'push' && github.ref_name == 'master' && github.ref_name || '') }}
 
       - name: Setup Python with UV
-        uses: ./.github/actions/setup-python-uv
+        uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/actions/setup-python-uv@develop_fix_broke_release
         with:
           python-version: ${{ inputs.python-version }}
 
