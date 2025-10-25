@@ -1,0 +1,183 @@
+name: 'Python Package Operations'
+description: 'Build, test, and optionally publish Python packages with UV'
+
+on:
+  workflow_call:
+    inputs:
+      operation:
+        description: 'Operation to perform: build, test, publish-pypi, publish-testpypi'
+        required: true
+        type: string
+      python-version:
+        description: 'Python version to use'
+        required: false
+        default: '3.13'
+        type: string
+      version:
+        description: 'Package version (for display purposes)'
+        required: false
+        default: ''
+        type: string
+      checkout-sha:
+        description: 'Specific commit SHA to checkout (for post-version-bump code)'
+        required: false
+        default: ''
+        type: string
+      upload-artifacts:
+        description: 'Whether to upload build artifacts'
+        required: false
+        default: true
+        type: boolean
+      artifact-name:
+        description: 'Name for uploaded artifacts'
+        required: false
+        default: 'python-package'
+        type: string
+      auth-method:
+        description: 'Authentication method: oidc or token'
+        required: false
+        default: 'oidc'
+        type: string
+    secrets:
+      PYPI_API_TOKEN:
+        description: 'PyPI API token (only required if auth-method is token)'
+        required: false
+      TEST_PYPI_API_TOKEN:
+        description: 'Test PyPI API token (only required if auth-method is token for TestPyPI)'
+        required: false
+
+    outputs:
+      build-success:
+        description: 'Whether build was successful'
+        value: ${{ jobs.python_operations.outputs.build_success }}
+      package-version:
+        description: 'Built package version'
+        value: ${{ jobs.python_operations.outputs.package_version }}
+
+jobs:
+  python_operations:
+    name: Python Package ${{ inputs.operation }}
+    runs-on: ubuntu-latest
+    outputs:
+      build_success: ${{ steps.build.outputs.success }}
+      package_version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
+          ref: ${{ inputs.checkout-sha != '' && inputs.checkout-sha || (github.event_name == 'push' && github.ref_name == 'master' && github.ref_name || '') }}
+
+      - name: Setup Python with UV
+        uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/actions/setup-python-uv@master
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Get package version
+        id: version
+        run: |
+          VERSION=$(uv version --short)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Package version: $VERSION"
+
+      - name: Build package
+        if: contains(fromJSON('["build", "test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
+        id: build
+        run: |
+          echo "🔨 Building Python package..."
+          if [ "${{ inputs.version }}" != "" ]; then
+            echo "Target version: ${{ inputs.version }}"
+          fi
+          
+          uv build
+          
+          echo "✅ Build completed successfully"
+          echo "success=true" >> $GITHUB_OUTPUT
+          
+          # List built artifacts
+          echo "📁 Built artifacts:"
+          ls -la dist/
+
+      - name: Test package integrity
+        if: contains(fromJSON('["test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
+        run: |
+          echo "🔍 Testing package integrity..."
+          
+          # Check that both wheel and sdist were created
+          if [ ! -f dist/*.whl ]; then
+            echo "❌ No wheel file found"
+            exit 1
+          fi
+          
+          if [ ! -f dist/*.tar.gz ]; then
+            echo "❌ No source distribution found"
+            exit 1
+          fi
+          
+          # Test installation in clean environment
+          echo "Testing package installation..."
+          uv pip install --system dist/*.whl --force-reinstall
+          
+          echo "✅ Package integrity test passed"
+
+      - name: Upload build artifacts
+        if: inputs.upload-artifacts && contains(fromJSON('["build", "test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist/
+          retention-days: 30
+
+      - name: Publish to PyPI using OIDC Authentication
+        if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'oidc'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+          verify-metadata: true
+          packages-dir: dist/
+          repository-url: ${{ inputs.operation == 'publish-testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+
+      - name: Publish to PyPI using Token Authentication
+        if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'token'
+        env:
+          UV_PUBLISH_TOKEN: ${{ inputs.operation == 'publish-pypi' && secrets.PYPI_API_TOKEN || secrets.TEST_PYPI_API_TOKEN }}
+        run: |
+          echo "🔑 Using PyPI token authentication with UV..."
+          
+          # Verify token is available
+          if [ -z "$UV_PUBLISH_TOKEN" ]; then
+            echo "❌ Error: PyPI API token not found in secrets"
+            echo "Please ensure ${{ inputs.operation == 'publish-pypi' && 'PYPI_API_TOKEN' || 'TEST_PYPI_API_TOKEN' }} is set in repository secrets"
+            exit 1
+          fi
+          
+          echo "🚀 Publishing to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} using UV token authentication..."
+          
+          # UV publish with token authentication
+          if [ "${{ inputs.operation }}" = "publish-testpypi" ]; then
+            echo "Publishing to TestPyPI..."
+            uv publish \
+              --publish-url https://test.pypi.org/legacy/ \
+              --token ${{ secrets.TEST_PYPI_API_TOKEN }} \
+              --verbose
+          else
+            echo "Publishing to PyPI..."
+            uv publish \
+              --token ${{ secrets.PYPI_API_TOKEN }} \
+              --verbose
+          fi
+          
+          echo "✅ Published to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} successfully"
+
+      - name: Operation summary
+        run: |
+          echo "## Python Package Operation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Operation**: ${{ inputs.operation }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python**: ${{ inputs.python-version }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.operation }}" == "publish-pypi" || "${{ inputs.operation }}" == "publish-testpypi" ]]; then
+            echo "- **Auth Method**: ${{ inputs.auth-method == 'oidc' && '🔒 OIDC (Trusted Publisher)' || '🔑 API Token' }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Repository**: ${{ inputs.operation == 'publish-pypi' && 'PyPI (production)' || 'TestPyPI (staging)' }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Status**: ✅ Completed successfully" >> $GITHUB_STEP_SUMMARY

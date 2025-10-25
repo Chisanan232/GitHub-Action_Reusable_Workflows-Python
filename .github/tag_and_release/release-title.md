@@ -1,1 +1,1 @@
-v6.0.0 🍻🍾 - Fix some issue and improve reusable workflow to be more flexible.
+v7.3.0 🍻 - Improve the reusable workflows to be more flexible in usage

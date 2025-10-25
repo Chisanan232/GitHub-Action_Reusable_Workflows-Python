@@ -3,10 +3,6 @@ name: GitHub Action reusable workflow project CI Test
 on:
   push:
     branches:
-      - "develop"
-      - "release"
-      - "release-**"
-      - "release/**"
       - "master"
     paths:
 #     The workflow self.
@@ -20,10 +16,6 @@ on:
 
   pull_request:
     branches:
-      - "develop"
-      - "release"
-      - "release-**"
-      - "release/**"
       - "master"
     paths:
 #     The workflow self.
@@ -56,7 +48,7 @@ jobs:
     env:
       RELEASE_TYPE: ${{ needs.test_build_git-tag_and_create_github-release.outputs.github-action_reusable_workflow_release_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check it whether get the output of previous one job which has version info or not
         run: bash scripts/ci/check_getting_output.sh

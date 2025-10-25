@@ -2,7 +2,7 @@
 #
 # Workflow Description:
 #     Run testing by specific type with all test items via PyTest and generate its testing
-#     coverage report (it would save reports by 'actions/upload-artifact@v3').
+#     coverage report (it would save reports by 'actions/upload-artifact').
 #
 # Workflow input parameters:
 #     * runtime_os: The OS to use for runtime environment. In default, it's 'ubuntu-latest'.
@@ -14,6 +14,7 @@
 #     * http_server_port: The port number of HTTP server.
 #     * http_server_app_module: The module path of HTTP server.
 #     * http_server_enter_point: The object about the web application.
+#     * keep_run_if_test_fail: Keep running CI process if it gets failure at running runs.
 #
 # Workflow running output:
 #     No, but it would save the testing coverage reports to provide after-process to organize and record.
@@ -72,6 +73,11 @@ on:
         type: string
         required: false
         default: app
+      keep_run_if_test_fail:
+        description: "Keep running CI process if it gets failure at running runs."
+        type: boolean
+        required: false
+        default: false
 
 env:
   PIP_DISABLE_PIP_VERSION_CHECK: 1
@@ -85,10 +91,10 @@ jobs:
         test-path: ${{fromJson(inputs.all_test_items_paths)}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Python ${{ inputs.python_version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.python_version }}
 
@@ -110,14 +116,15 @@ jobs:
 
       - name: Run tests with pytest
         run: pytest ${{ matrix.test-path }}
-        continue-on-error: true
+        continue-on-error: ${{ inputs.keep_run_if_test_fail }}
 
       - name: Rename the code coverage result file
         run: mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
 
       - name: Upload code coverage result file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: coverage_${{ inputs.test_type }}_${{ inputs.runtime_os }}_${{ inputs.python_version }}
           path: .coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
           if-no-files-found: error
+          include-hidden-files: true

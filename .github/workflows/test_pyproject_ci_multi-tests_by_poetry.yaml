@@ -3,10 +3,6 @@ name: Python project with Poetry CI Test (multi-tests)
 on:
   push:
     branches:
-      - "develop"
-      - "release"
-      - "release-**"
-      - "release/**"
       - "master"
     paths:
 #     The workflow self.
@@ -16,6 +12,7 @@ on:
 #     The sample Python code.
       - ".coveragerc"
       - "pyproject.toml"
+      - "poetry.lock"
       - "pytest.ini"
       - "sonar-project.properties"
       - "test_gh_workflow/**"
@@ -36,10 +33,6 @@ on:
 
   pull_request:
     branches:
-      - "develop"
-      - "release"
-      - "release-**"
-      - "release/**"
       - "master"
     paths:
 #     The workflow self.
@@ -49,6 +42,7 @@ on:
 #     The sample Python code.
       - ".coveragerc"
       - "pyproject.toml"
+      - "poetry.lock"
       - "pytest.ini"
       - "sonar-project.properties"
       - "test_gh_workflow/**"
@@ -90,6 +84,7 @@ jobs:
     uses: ./.github/workflows/rw_poetry_run_test.yaml
     with:
       test_type: unit-test
+      install_dependency_with_group: github-action
       all_test_items_paths: ${{needs.prep-testbed_unit-test.outputs.all_test_items}}
 
 
@@ -99,6 +94,7 @@ jobs:
     uses: ./.github/workflows/rw_poetry_run_test_with_multi_py_versions.yaml
     with:
       test_type: integration-test
+      install_dependency_with_group: github-action
       all_test_items_paths: ${{needs.prep-testbed_integration-test.outputs.all_test_items}}
       setup_http_server: true
       http_server_host: 0.0.0.0
@@ -159,7 +155,8 @@ jobs:
     uses: ./.github/workflows/rw_sonarqube_scan.yaml
     secrets:
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-#    with:
+    with:
+      test_type: all-test
 #      download_path: ${{ inputs.download_path }}
 
 
@@ -196,7 +193,7 @@ jobs:
       RELEASE_TYPE: ${{ needs.build_git-tag_and_create_github-release.outputs.python_release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check it whether get the output of previous one job which has version info or not
         run: bash scripts/ci/check_getting_output.sh

@@ -3,10 +3,6 @@ name: Python project CI Test (one-test)
 on:
   push:
     branches:
-      - "develop"
-      - "release"
-      - "release-**"
-      - "release/**"
       - "master"
     paths:
 #     The workflow self.
@@ -37,10 +33,6 @@ on:
 
   pull_request:
     branches:
-      - "develop"
-      - "release"
-      - "release-**"
-      - "release/**"
       - "master"
     paths:
 #     The workflow self.
@@ -138,7 +130,8 @@ jobs:
     uses: ./.github/workflows/rw_sonarqube_scan.yaml
     secrets:
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-#    with:
+    with:
+      test_type: unit-test
 #      download_path: ${{ inputs.download_path }}
 
 

@@ -5,11 +5,21 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    reviewers:
-      - "Chisanan232"
     labels:
       - "🔍 enhancement"
       - "🤖 github actions"
+      - "dependencies"
+    commit-message:
+      prefix: ⬆
+
+  # Python (for CI scripts only)
+  - package-ecosystem: "uv"
+    directory: "/scripts"
+    schedule:
+      interval: "daily"
+    labels:
+      - "🔍 enhancement"
+      - "🐍 python"
       - "dependencies"
     commit-message:
       prefix: ⬆

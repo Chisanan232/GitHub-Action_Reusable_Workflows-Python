@@ -7,6 +7,8 @@
 #     * General arguments:
 #         * download_path: The path to download testing coverage reports via 'actions/download-artifact@v3'.
 #         * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
+#         * run_with_python_version: The Python version you want to use in this workflow.
+#         * test_working_directory: The working directory for test running.
 #         * upload-to-codecov: If it's true, it would upload testing coverage report for Codecov (https://codecov.io).
 #         * codecov_flags: The flags of the testing coverage report for Codecov. This option would be required if 'upload-to-codecov' is true.
 #         * codecov_name: The name of the testing coverage report for Codecov. This option would be required if 'upload-to-codecov' is true.
@@ -37,6 +39,16 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         required: true
         type: string
+      run_with_python_version:
+        description: "The Python version you want to use in this workflow."
+        type: string
+        required: false
+        default: '3.12'
+      test_working_directory:
+        description: "The working directory for test running."
+        required: false
+        type: string
+        default: './'
       upload-to-codecov:
         description: "If it's true, it would upload testing coverage report for Codecov (https://codecov.io)."
         type: boolean
@@ -80,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download shell script for checking input parameters
         run: |
@@ -100,23 +112,23 @@ jobs:
           bash ./scripts/ci/check-input-params.sh ${{ inputs.upload-to-codacy }} ${{ secrets.codacy_token }}
 
       - name: Download code coverage result files which has be handled by different test type process
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
-          name: test_coverage_data_file
+          name: ${{ inputs.test_type }}_coverage_data_file
           path: ${{ inputs.download_path }}
 
       - name: Download code coverage result files which has be handled by different test type process
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
-          name: test_coverage_xml_report
+          name: ${{ inputs.test_type }}_coverage_xml_report
           path: ${{ inputs.download_path }}
 
-      - name: Install Python 3.10
+      - name: Install Python ${{ inputs.run_with_python_version }}
 #        if: ${{ inputs.upload-to-codecov == true || inputs.upload-to-coveralls == true }}
         if: ${{ inputs.upload-to-coveralls == true }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: ${{ inputs.run_with_python_version }}
 
       - name: Install Python dependencies about handling testing coverage report
         if: ${{ inputs.upload-to-coveralls == true }}
@@ -159,6 +171,7 @@ jobs:
 
       - name: Upload coverage report to Coveralls https://coveralls.io
         if: ${{ inputs.upload-to-coveralls == true }}
+        working-directory: ${{ inputs.test_working_directory }}
         env:
           GITHUB_TOKEN: ${{ secrets.coveralls_token }}
         run: coveralls --verbose
