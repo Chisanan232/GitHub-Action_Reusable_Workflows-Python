@@ -93,32 +93,6 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: '🚀 CI/CD Features',
-          items: [
-            {
-              type: 'doc',
-              id: 'workflows/cicd-overview',
-              label: '📋 Overview',
-            },
-            {
-              type: 'doc',
-              id: 'workflows/release-management',
-              label: '🏷️ Release Management',
-            },
-            {
-              type: 'doc',
-              id: 'workflows/documentation-pipeline',
-              label: '📚 Documentation Pipeline',
-            },
-            {
-              type: 'doc',
-              id: 'workflows/configuration-reference',
-              label: '⚙️ Configuration Reference',
-            },
-          ],
-        },
-        {
-          type: 'category',
           label: '🔄 Release Workflows',
           items: [
             {
