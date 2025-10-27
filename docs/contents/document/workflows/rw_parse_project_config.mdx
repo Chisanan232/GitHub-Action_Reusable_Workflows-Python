@@ -1,0 +1,95 @@
+---
+id: rw_parse_project_config
+title: Parse Project Config Workflow
+sidebar_position: 20
+---
+
+# Parse Project Config Workflow
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_parse_project_config.yaml)
+
+Parse and validate project configuration from intent.yaml file.
+
+## Overview
+
+This workflow parses the enhanced `intent.yaml` configuration file, validates its structure, and provides structured outputs for all project settings including Docker, Git, validation, and documentation configuration.
+
+## When to Use
+
+- ✅ You need to parse intent.yaml configuration
+- ✅ You want centralized project configuration
+- ✅ You need configuration validation
+- ✅ You're using the release system
+
+## Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `config_path` | string | `'.github/tag_and_release/intent.yaml'` | Path to config file |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `project_name` | Project name |
+| `package_name` | Python package name |
+| `base_branch` | Base branch name |
+| `git_commit_name` | Git commit author name |
+| `git_commit_email` | Git commit author email |
+| `docker_registry_dockerhub` | Docker Hub registry URL |
+| `docker_registry_ghcr` | GHCR registry URL |
+| `docker_health_check_path` | Health check endpoint |
+| `docker_health_check_port` | Health check port |
+| `docker_run_options` | Docker run options |
+| `validation_version` | Validation version |
+| `validation_test_version` | Test version |
+| `docs_readme_path` | README path |
+| `docs_installation_path` | Installation docs path |
+| `docs_ci_cd_path` | CI/CD docs path |
+| `docs_preview_branch` | Preview branch name |
+
+## Usage Examples
+
+### Basic Usage
+
+```yaml
+jobs:
+  config:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_project_config.yaml@master
+
+  use-config:
+    needs: config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use config
+        run: |
+          echo "Project: ${{ needs.config.outputs.project_name }}"
+          echo "Package: ${{ needs.config.outputs.package_name }}"
+```
+
+### In Release Workflow
+
+```yaml
+jobs:
+  config:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_project_config.yaml@master
+
+  release:
+    needs: config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure Git
+        run: |
+          git config user.name "${{ needs.config.outputs.git_commit_name }}"
+          git config user.email "${{ needs.config.outputs.git_commit_email }}"
+```
+
+## Configuration File
+
+See [Release Intent Configuration](./release-intent-configuration.mdx) for complete configuration reference.
+
+## Related Workflows
+
+- [rw_parse_release_intent](./rw_parse_release_intent.mdx) - Parse release intent
+- [Release Intent Configuration](./release-intent-configuration.mdx) - Configuration guide
+- [rw_release_complete](./rw_release_complete.mdx) - Production release
