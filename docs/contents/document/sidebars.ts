@@ -154,12 +154,12 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_docs_operations',
+              id: 'workflows/document/rw_docs_operations',
               label: 'Docs Operations',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_documentation_deployment',
+              id: 'workflows/document/rw_documentation_deployment',
               label: 'Docs Deployment',
             },
           ],
