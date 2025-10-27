@@ -1,0 +1,95 @@
+---
+id: rw_build_git-tag_and_create_github-release
+title: Git Tag and GitHub Release Workflow
+sidebar_position: 22
+---
+
+# Git Tag and GitHub Release Workflow
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_build_git-tag_and_create_github-release.yaml)
+
+Create Git tags and GitHub releases automatically.
+
+## Overview
+
+This workflow automates the creation of Git tags and GitHub releases based on the release intent configuration, handling version bumping, tag creation, and release notes generation.
+
+## When to Use
+
+- ✅ You need automated Git tagging
+- ✅ You want automated GitHub releases
+- ✅ You need semantic versioning
+- ✅ You're implementing release automation
+
+## Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `config_path` | string | `'.github/tag_and_release/intent.yaml'` | Path to config file |
+| `dry_run` | boolean | `false` | Test without creating release |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `tag_name` | Created Git tag |
+| `release_id` | GitHub release ID |
+| `release_url` | URL to GitHub release |
+| `release_type` | Type of release (Official-Release, Pre-Release) |
+| `version` | Release version |
+
+## Usage Examples
+
+### Basic Usage
+
+```yaml
+jobs:
+  release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release.yaml@master
+    permissions:
+      contents: write
+```
+
+### With Dry Run
+
+```yaml
+jobs:
+  test-release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release.yaml@master
+    with:
+      dry_run: true
+```
+
+### Complete Release Pipeline
+
+```yaml
+jobs:
+  release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release.yaml@master
+    permissions:
+      contents: write
+
+  deploy-branch:
+    needs: release
+    if: needs.release.outputs.release_type == 'Official-Release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create version branch
+        run: |
+          git checkout -b ${{ needs.release.outputs.tag_name }}
+          git push origin ${{ needs.release.outputs.tag_name }}
+```
+
+## How It Works
+
+1. **Parse Configuration** - Reads intent.yaml
+2. **Determine Version** - Calculates next version
+3. **Create Git Tag** - Tags the commit
+4. **Generate Release Notes** - Creates release notes
+5. **Create GitHub Release** - Publishes release
+
+## Related Workflows
+
+- [rw_build_git-tag_and_create_github-release_v2](./rw_build_git-tag_and_create_github-release_v2.mdx) - Version 2
+- [Release Management](./release-management.mdx) - Release process
+- [rw_release_complete](./rw_release_complete.mdx) - Complete release
