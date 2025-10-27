@@ -1,0 +1,83 @@
+---
+id: rw_build_git-tag_and_create_github-release_v2
+title: Git Tag and GitHub Release Workflow v2
+sidebar_position: 23
+---
+
+# Git Tag and GitHub Release Workflow v2
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml)
+
+Enhanced version of Git tag and GitHub release creation workflow.
+
+## Overview
+
+Version 2 of the Git tag and GitHub release workflow with improved features, better error handling, and enhanced configuration options.
+
+## When to Use
+
+- ✅ You need the latest release automation features
+- ✅ You want improved error handling
+- ✅ You need enhanced configuration options
+- ✅ You're starting a new project
+
+## Inputs
+
+Same as v1 with additional options:
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `config_path` | string | `'.github/tag_and_release/intent.yaml'` | Path to config file |
+| `dry_run` | boolean | `false` | Test without creating release |
+| `generate_changelog` | boolean | `true` | Auto-generate changelog |
+
+## Outputs
+
+Same as v1 with additional outputs:
+
+| Output | Description |
+|--------|-------------|
+| `tag_name` | Created Git tag |
+| `release_id` | GitHub release ID |
+| `release_url` | URL to GitHub release |
+| `release_type` | Type of release |
+| `version` | Release version |
+| `changelog` | Generated changelog |
+
+## Usage Examples
+
+### Basic Usage
+
+```yaml
+jobs:
+  release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
+    permissions:
+      contents: write
+```
+
+### With Changelog Generation
+
+```yaml
+jobs:
+  release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
+    with:
+      generate_changelog: true
+    permissions:
+      contents: write
+```
+
+## Improvements Over v1
+
+- ✅ Better error handling
+- ✅ Automatic changelog generation
+- ✅ Enhanced validation
+- ✅ Improved logging
+- ✅ Better performance
+
+## Related Workflows
+
+- [rw_build_git-tag_and_create_github-release](./rw_build_git-tag_and_create_github-release.mdx) - Version 1
+- [Release Management](./release-management.mdx) - Release process
+- [rw_release_complete](./rw_release_complete.mdx) - Complete release
