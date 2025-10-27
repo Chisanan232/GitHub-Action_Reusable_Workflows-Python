@@ -143,7 +143,7 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_docker_operations',
+              id: 'workflows/docker/rw_docker_operations',
               label: 'Docker Operations',
             },
           ],
