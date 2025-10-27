@@ -117,22 +117,22 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_python_package',
+              id: 'workflows/build_and_deploy/rw_python_package',
               label: 'Python Package Build',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_push_pypi',
+              id: 'workflows/build_and_deploy/rw_push_pypi',
               label: 'PyPI Publish',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_pre-building_test',
+              id: 'workflows/build_and_deploy/rw_pre-building_test',
               label: 'Pre-Building Test',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_checking_deployment_state',
+              id: 'workflows/build_and_deploy/rw_checking_deployment_state',
               label: 'Check Deployment State',
             },
           ],
