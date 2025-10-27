@@ -1,0 +1,77 @@
+---
+id: requirements
+title: Requirements
+sidebar_position: 1
+---
+
+# Requirements
+
+Before using GitHub Action Reusable Workflows, ensure your project and environment meet the following requirements:
+
+## Repository Requirements
+
+- **GitHub Repository**: Your project must be hosted on GitHub
+- **GitHub Actions Enabled**: GitHub Actions must be enabled for your repository
+- **Workflow Permissions**: Appropriate permissions to create and modify workflow files
+
+## Project Requirements
+
+### For Python Projects
+
+- **Python Version**: Python 3.8 or higher (workflows support 3.8-3.12)
+- **Package Structure**: 
+  - Standard Python package with `setup.py` or `pyproject.toml`
+  - Poetry-managed projects with `pyproject.toml` and `poetry.lock`
+- **Test Framework**: PyTest (recommended and supported by default)
+- **Version File**: `__pkg_info__.py` module with `__version__` variable (for deployment workflows)
+
+### For Docker Projects
+
+- **Dockerfile**: A valid Dockerfile in your repository
+- **Docker Registry Access**: Credentials for DockerHub or GitHub Container Registry (GHCR)
+
+### For Documentation Projects
+
+- **Documentation Framework**: Docusaurus, MkDocs, or similar
+- **Build Configuration**: Proper build scripts defined in `package.json` or documentation config
+
+## Optional Requirements
+
+### For Code Coverage
+
+- **Coverage Tools**: `pytest-cov` or `coverage.py`
+- **Platform Tokens**: 
+  - Codecov token (for Codecov integration)
+  - Coveralls token (for Coveralls integration)
+  - Codacy project token (for Codacy integration)
+
+### For Code Quality
+
+- **SonarQube/SonarCloud**: Account and project token for code quality scanning
+- **Configuration File**: `sonar-project.properties` in repository root
+
+### For Release Management
+
+- **GitHub Token**: Automatically provided by GitHub Actions
+- **PyPI Credentials**: Username and token for publishing to PyPI (official or test)
+- **Semantic Versioning**: Follow semantic versioning for releases
+
+## GitHub Secrets Configuration
+
+You'll need to configure the following secrets in your repository settings:
+
+### Required for PyPI Deployment
+- `PYPI_USERNAME` or `PYPI_TOKEN` - PyPI credentials
+- `TEST_PYPI_TOKEN` - Test PyPI token (for testing releases)
+
+### Required for Code Coverage
+- `CODECOV_TOKEN` - Codecov API token
+- `COVERALLS_TOKEN` - Coveralls API token
+- `CODACY_PROJECT_TOKEN` - Codacy project token
+
+### Required for Docker
+- `DOCKERHUB_USERNAME` - DockerHub username
+- `DOCKERHUB_TOKEN` - DockerHub access token
+
+### Required for SonarQube
+- `SONAR_TOKEN` - SonarQube/SonarCloud token
