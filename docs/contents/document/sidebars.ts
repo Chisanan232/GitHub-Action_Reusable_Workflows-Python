@@ -170,12 +170,12 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_parse_project_config',
+              id: 'workflows/configuration/rw_parse_project_config',
               label: 'Parse Project Config',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_parse_release_intent',
+              id: 'workflows/configuration/rw_parse_release_intent',
               label: 'Parse Release Intent',
             },
           ],
