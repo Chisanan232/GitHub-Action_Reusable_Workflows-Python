@@ -202,7 +202,7 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_sonarqube_scan',
+              id: 'workflows/code_quality/rw_sonarqube_scan',
               label: 'SonarQube Scan',
             },
           ],
