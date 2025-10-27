@@ -1,0 +1,176 @@
+---
+id: rw_get_tests
+title: Get Tests Workflow
+sidebar_position: 2
+---
+
+# rw_get_tests.yaml
+
+Prepare and discover test items by scanning test directories.
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_get_tests.yaml)
+
+## Description
+
+This workflow runs a shell script to automatically discover all test items in your project. It's typically the first step in a testing pipeline, identifying which tests need to be executed.
+
+## Inputs
+
+| Parameter                | Type    | Required | Default                         | Description                                                        |
+|--------------------------|---------|----------|---------------------------------|--------------------------------------------------------------------|
+| `test_working_directory` | string  | No       | `./`                            | The working directory for test running                             |
+| `shell_path`             | string  | No       | `./scripts/ci/get-all-tests.sh` | Path to the shell script that discovers test items                 |
+| `shell_arg`              | string  | **Yes**  | -                               | Arguments for the shell script (typically the test directory path) |
+| `use_customized_shell`   | boolean | No       | `false`                         | Whether to use a custom shell script instead of the default        |
+
+## Outputs
+
+| Output           | Description                                  |
+|------------------|----------------------------------------------|
+| `all_test_items` | JSON array of all discovered test item paths |
+
+## Usage Examples
+
+### Using Default Shell Script (Recommended)
+
+The default shell script automatically scans the specified directory for test files:
+
+```yaml
+jobs:
+  prepare-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+```
+
+### Using Custom Shell Script
+
+If you have a custom script for discovering tests:
+
+```yaml
+jobs:
+  prepare-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_path: scripts/ci/custom-test-discovery.sh
+      shell_arg: unix
+      use_customized_shell: true
+```
+
+### With Custom Working Directory
+
+For projects with nested structure:
+
+```yaml
+jobs:
+  prepare-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      test_working_directory: ./nested_project/
+      shell_arg: test/unit_test/
+```
+
+## Using the Output
+
+The output can be passed to subsequent test execution workflows:
+
+```yaml
+jobs:
+  prepare-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  run-tests:
+    needs: prepare-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: ${{ needs.prepare-tests.outputs.all_test_items }}
+```
+
+## Default Shell Script Behavior
+
+The default shell script (`get-all-tests.sh`) performs the following:
+
+1. Scans the specified directory recursively
+2. Identifies Python test files (typically `test_*.py` or `*_test.py`)
+3. Returns a JSON array of test file paths
+4. Handles both flat and nested test structures
+
+## Custom Shell Script Requirements
+
+If you provide a custom shell script, it must:
+
+1. Accept command-line arguments
+2. Output a valid JSON array of test paths
+3. Be executable (`chmod +x`)
+4. Return exit code 0 on success
+
+Example custom script:
+
+```bash
+#!/bin/bash
+# custom-test-discovery.sh
+
+TEST_DIR=$1
+find "$TEST_DIR" -name "test_*.py" -type f | jq -R -s -c 'split("\n")[:-1]'
+```
+
+## Common Use Cases
+
+### Separate Unit and Integration Tests
+
+```yaml
+jobs:
+  prepare-unit-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  prepare-integration-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/integration_test/
+```
+
+### Multiple Test Directories
+
+```yaml
+jobs:
+  prepare-core-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: src/core/tests/
+
+  prepare-api-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: src/api/tests/
+```
+
+## Troubleshooting
+
+### No Tests Found
+
+If no tests are discovered:
+
+1. Verify the `shell_arg` path is correct
+2. Ensure test files follow naming conventions (`test_*.py`)
+3. Check file permissions
+4. Review workflow logs for error messages
+
+### Invalid JSON Output
+
+If you get JSON parsing errors:
+
+1. Verify custom shell script outputs valid JSON
+2. Check for trailing newlines or extra characters
+3. Test the shell script locally before using in workflow
+
+## Related Workflows
+
+- [rw_run_test](./rw_run_test.mdx) - Execute discovered tests
+- [rw_poetry_run_test](./rw_poetry_run_test.mdx) - Execute tests with Poetry
+- [rw_run_test_with_multi_py_versions](./rw_run_test_with_multi_py_versions.mdx) - Multi-version testing
