@@ -1,0 +1,267 @@
+---
+id: rw_checking_deployment_state
+title: Checking Deployment State Workflow
+sidebar_position: 25
+---
+
+# Checking Deployment State Workflow
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_checking_deployment_state.yaml)
+
+Check if deployment is needed based on file changes and configuration.
+
+## Overview
+
+This workflow determines whether deployment should proceed by analyzing file changes, checking deployment configuration, and validating deployment conditions.
+
+## When to Use
+
+- ✅ You want conditional deployments
+- ✅ You need to check if deployment is necessary
+- ✅ You want to avoid unnecessary deployments
+- ✅ You're implementing smart deployment logic
+
+## Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `deployment_type` | string | `'pypi'` | Deployment type (pypi, docker, docs) |
+| `check_files` | string | `''` | File patterns to check for changes |
+| `base_ref` | string | `'main'` | Base branch for comparison |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `should_deploy` | Whether deployment should proceed |
+| `changed_files` | List of changed files |
+| `deployment_reason` | Reason for deployment decision |
+
+## Usage Examples
+
+### Basic Usage
+
+```yaml
+jobs:
+  check-deployment:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_checking_deployment_state.yaml@master
+    with:
+      deployment_type: pypi
+
+  deploy:
+    needs: check-deployment
+    if: needs.check-deployment.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/rw_push_pypi.yaml
+```
+
+### Check Specific Files
+
+```yaml
+jobs:
+  check-deployment:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_checking_deployment_state.yaml@master
+    with:
+      deployment_type: pypi
+      check_files: 'src/**/*.py,pyproject.toml,setup.py'
+```
+
+### Multiple Deployment Types
+
+```yaml
+jobs:
+  check-pypi:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_checking_deployment_state.yaml@master
+    with:
+      deployment_type: pypi
+      check_files: 'src/**/*.py'
+
+  check-docker:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_checking_deployment_state.yaml@master
+    with:
+      deployment_type: docker
+      check_files: 'Dockerfile,docker/**'
+
+  deploy-pypi:
+    needs: check-pypi
+    if: needs.check-pypi.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/rw_push_pypi.yaml
+
+  deploy-docker:
+    needs: check-docker
+    if: needs.check-docker.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/rw_docker_operations.yaml
+```
+
+## How It Works
+
+### Step 1: Get Changed Files
+
+Identifies files changed since base ref:
+
+```bash
+git diff --name-only $BASE_REF HEAD
+```
+
+### Step 2: Check File Patterns
+
+Matches changed files against patterns:
+
+```bash
+for pattern in $CHECK_FILES; do
+  if [[ $changed_files == *"$pattern"* ]]; then
+    should_deploy=true
+  fi
+done
+```
+
+### Step 3: Check Configuration
+
+Reads deployment configuration from intent.yaml:
+
+```yaml
+artifacts:
+  python: auto  # Check if auto and files changed
+```
+
+### Step 4: Determine Deployment
+
+Decides based on:
+- File changes
+- Configuration settings
+- Deployment type
+- Manual overrides
+
+## Deployment Logic
+
+### Auto Mode
+
+Deploys if relevant files changed:
+
+```yaml
+artifacts:
+  python: auto
+```
+
+**Logic:**
+- Check if Python files changed
+- Check if dependencies changed
+- Deploy if changes detected
+
+### Force Mode
+
+Always deploys:
+
+```yaml
+artifacts:
+  python: force
+```
+
+**Logic:**
+- Ignore file changes
+- Always deploy
+
+### Skip Mode
+
+Never deploys:
+
+```yaml
+artifacts:
+  python: skip
+```
+
+**Logic:**
+- Ignore file changes
+- Never deploy
+
+## File Patterns
+
+### Python Package
+
+```yaml
+check_files: 'src/**/*.py,pyproject.toml,setup.py,requirements.txt'
+```
+
+### Docker Image
+
+```yaml
+check_files: 'Dockerfile,docker/**,requirements.txt'
+```
+
+### Documentation
+
+```yaml
+check_files: 'docs/**/*.md,docs/**/*.mdx,docusaurus.config.ts'
+```
+
+## Best Practices
+
+### 1. Specific File Patterns
+
+Use specific patterns to avoid false positives:
+
+```yaml
+check_files: 'src/**/*.py,!src/**/*_test.py'
+```
+
+### 2. Multiple Conditions
+
+Combine multiple checks:
+
+```yaml
+- File changes
+- Configuration mode
+- Branch name
+- Tag presence
+```
+
+### 3. Clear Logging
+
+Log deployment decisions:
+
+```bash
+echo "Deployment decision: $SHOULD_DEPLOY"
+echo "Reason: $DEPLOYMENT_REASON"
+echo "Changed files: $CHANGED_FILES"
+```
+
+## Troubleshooting
+
+### Always Deploying
+
+**Symptoms:**
+- Deploys even without changes
+
+**Solutions:**
+1. Check configuration mode:
+   ```yaml
+   artifacts:
+     python: auto  # Not force
+   ```
+
+2. Verify file patterns
+3. Check base ref
+
+### Never Deploying
+
+**Symptoms:**
+- Never deploys despite changes
+
+**Solutions:**
+1. Check file patterns match:
+   ```yaml
+   check_files: 'src/**/*.py'
+   ```
+
+2. Verify configuration:
+   ```yaml
+   artifacts:
+     python: auto  # Not skip
+   ```
+
+3. Check changed files list
+
+## Related Workflows
+
+- [rw_push_pypi](./rw_push_pypi.mdx) - PyPI deployment
+- [rw_docker_operations](./rw_docker_operations.mdx) - Docker deployment
+- [rw_pre-building_test](./rw_pre-building_test.mdx) - Pre-deployment testing
