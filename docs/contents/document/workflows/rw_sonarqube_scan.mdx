@@ -1,0 +1,296 @@
+---
+id: rw_sonarqube_scan
+title: SonarQube Scan Workflow
+sidebar_position: 26
+---
+
+# SonarQube Scan Workflow
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_sonarqube_scan.yaml)
+
+Run SonarQube or SonarCloud code quality analysis.
+
+## Overview
+
+This workflow performs comprehensive code quality analysis using SonarQube or SonarCloud, checking for bugs, vulnerabilities, code smells, and code coverage.
+
+## When to Use
+
+- ✅ You need code quality analysis
+- ✅ You want to track technical debt
+- ✅ You need security vulnerability scanning
+- ✅ You want code coverage tracking
+
+## Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `sonar_platform` | string | `'sonarcloud'` | Platform (sonarcloud, sonarqube) |
+| `sonar_organization` | string | `''` | SonarCloud organization |
+| `sonar_project_key` | string | `''` | Project key |
+| `coverage_paths` | string | `'coverage.xml'` | Coverage report paths |
+| `sources` | string | `'src'` | Source code paths |
+
+## Secrets
+
+| Secret | Required | Description |
+|--------|----------|-------------|
+| `sonar_token` | Yes | SonarCloud/SonarQube token |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `quality_gate_status` | Quality gate pass/fail status |
+| `analysis_url` | URL to analysis results |
+
+## Usage Examples
+
+### SonarCloud Analysis
+
+```yaml
+jobs:
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+
+  sonar:
+    needs: test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_sonarqube_scan.yaml@master
+    secrets:
+      sonar_token: ${{ secrets.SONAR_TOKEN }}
+    with:
+      sonar_platform: sonarcloud
+      sonar_organization: my-org
+      sonar_project_key: my-project
+```
+
+### SonarQube Analysis
+
+```yaml
+jobs:
+  sonar:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_sonarqube_scan.yaml@master
+    secrets:
+      sonar_token: ${{ secrets.SONARQUBE_TOKEN }}
+    with:
+      sonar_platform: sonarqube
+      sonar_project_key: my-project
+      sources: 'src,lib'
+```
+
+### With Coverage
+
+```yaml
+jobs:
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/
+
+  organize-coverage:
+    needs: test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: all-tests
+
+  sonar:
+    needs: organize-coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_sonarqube_scan.yaml@master
+    secrets:
+      sonar_token: ${{ secrets.SONAR_TOKEN }}
+    with:
+      sonar_platform: sonarcloud
+      sonar_organization: my-org
+      sonar_project_key: my-project
+      coverage_paths: 'coverage.xml'
+```
+
+## How It Works
+
+### Step 1: Download Coverage
+
+Downloads coverage reports from previous jobs:
+
+```yaml
+- uses: actions/download-artifact@v4
+  with:
+    name: coverage-reports
+```
+
+### Step 2: Run SonarScanner
+
+Executes SonarScanner analysis:
+
+```bash
+sonar-scanner \
+  -Dsonar.organization=$SONAR_ORG \
+  -Dsonar.projectKey=$PROJECT_KEY \
+  -Dsonar.sources=$SOURCES \
+  -Dsonar.python.coverage.reportPaths=$COVERAGE_PATHS \
+  -Dsonar.host.url=https://sonarcloud.io
+```
+
+### Step 3: Quality Gate Check
+
+Checks quality gate status:
+
+```bash
+curl -u $SONAR_TOKEN: \
+  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$PROJECT_KEY"
+```
+
+## Configuration
+
+### sonar-project.properties
+
+Create configuration file:
+
+```properties
+sonar.projectKey=my-project
+sonar.organization=my-org
+sonar.sources=src
+sonar.tests=test
+sonar.python.coverage.reportPaths=coverage.xml
+sonar.python.version=3.11
+
+# Exclusions
+sonar.exclusions=**/migrations/**,**/tests/**
+sonar.coverage.exclusions=**/tests/**,**/__init__.py
+```
+
+### Quality Gate
+
+Configure quality gate rules:
+
+- **Coverage**: Minimum 80%
+- **Duplications**: Maximum 3%
+- **Maintainability**: A rating
+- **Reliability**: A rating
+- **Security**: A rating
+
+## Metrics Tracked
+
+### Code Quality
+
+- **Bugs**: Potential bugs
+- **Vulnerabilities**: Security issues
+- **Code Smells**: Maintainability issues
+- **Technical Debt**: Estimated fix time
+
+### Coverage
+
+- **Line Coverage**: % of lines covered
+- **Branch Coverage**: % of branches covered
+- **Condition Coverage**: % of conditions covered
+
+### Complexity
+
+- **Cyclomatic Complexity**: Code complexity
+- **Cognitive Complexity**: Understanding difficulty
+
+### Duplications
+
+- **Duplicated Lines**: % of duplicated code
+- **Duplicated Blocks**: Number of duplications
+
+## Best Practices
+
+### 1. Configure Exclusions
+
+Exclude non-production code:
+
+```properties
+sonar.exclusions=**/tests/**,**/migrations/**,**/__pycache__/**
+sonar.coverage.exclusions=**/tests/**
+```
+
+### 2. Set Quality Gates
+
+Define minimum standards:
+
+```properties
+sonar.qualitygate.wait=true
+sonar.qualitygate.timeout=300
+```
+
+### 3. Track Coverage
+
+Include coverage reports:
+
+```properties
+sonar.python.coverage.reportPaths=coverage.xml,coverage-*.xml
+```
+
+### 4. Regular Scans
+
+Run on every PR and merge:
+
+```yaml
+on:
+  pull_request:
+  push:
+    branches: [main]
+```
+
+## Troubleshooting
+
+### Analysis Fails
+
+**Symptoms:**
+- SonarScanner errors
+- Authentication failures
+
+**Solutions:**
+1. Verify token:
+   ```yaml
+   secrets:
+     sonar_token: ${{ secrets.SONAR_TOKEN }}
+   ```
+
+2. Check project key
+3. Verify organization name
+
+### Coverage Not Showing
+
+**Symptoms:**
+- 0% coverage in SonarCloud
+- Coverage report not found
+
+**Solutions:**
+1. Verify coverage path:
+   ```yaml
+   coverage_paths: 'coverage.xml'
+   ```
+
+2. Check coverage format (must be XML)
+3. Ensure coverage artifact uploaded
+
+### Quality Gate Fails
+
+**Symptoms:**
+- Quality gate status: FAILED
+- Metrics below threshold
+
+**Solutions:**
+1. Review analysis results
+2. Fix identified issues
+3. Adjust quality gate settings
+4. Improve test coverage
+
+## Related Workflows
+
+- [rw_run_test](./rw_run_test.mdx) - Run tests
+- [rw_organize_test_cov_reports](./rw_organize_test_cov_reports.mdx) - Organize coverage
+- [rw_upload_test_cov_report](./rw_upload_test_cov_report.mdx) - Upload coverage
+
+## Additional Resources
+
+- [SonarCloud Documentation](https://docs.sonarcloud.io/)
+- [SonarQube Documentation](https://docs.sonarqube.org/)
+- [SonarScanner for Python](https://docs.sonarqube.org/latest/analysis/languages/python/)
