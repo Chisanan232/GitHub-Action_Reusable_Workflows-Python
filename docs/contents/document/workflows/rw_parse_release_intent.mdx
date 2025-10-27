@@ -1,0 +1,90 @@
+---
+id: rw_parse_release_intent
+title: Parse Release Intent Workflow
+sidebar_position: 21
+---
+
+# Parse Release Intent Workflow
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_parse_release_intent.yaml)
+
+Parse and validate release intent configuration.
+
+## Overview
+
+This workflow parses the release intent section of `intent.yaml`, validates the configuration against JSON schema, and determines which artifacts should be released.
+
+## When to Use
+
+- ✅ You need to parse release configuration
+- ✅ You want to validate release intent
+- ✅ You're implementing release workflows
+- ✅ You need artifact release decisions
+
+## Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `config_path` | string | `'.github/tag_and_release/intent.yaml'` | Path to config file |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `release_enabled` | Whether releases are enabled |
+| `version_level` | Version bump level (auto, patch, minor, major) |
+| `python_artifact` | Python package release mode (auto, force, skip) |
+| `docker_artifact` | Docker image release mode (auto, force, skip) |
+| `docs_artifact` | Documentation release mode |
+| `docs_sections` | Documentation sections to version |
+| `docs_strategy` | Documentation versioning strategy |
+| `release_notes` | Release notes content |
+
+## Usage Examples
+
+### Basic Usage
+
+```yaml
+jobs:
+  intent:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_release_intent.yaml@master
+
+  release:
+    needs: intent
+    if: needs.intent.outputs.release_enabled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check release mode
+        run: |
+          echo "Python: ${{ needs.intent.outputs.python_artifact }}"
+          echo "Docker: ${{ needs.intent.outputs.docker_artifact }}"
+          echo "Docs: ${{ needs.intent.outputs.docs_artifact }}"
+```
+
+### Conditional Artifact Release
+
+```yaml
+jobs:
+  intent:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_release_intent.yaml@master
+
+  python-package:
+    needs: intent
+    if: needs.intent.outputs.python_artifact != 'skip'
+    uses: ./.github/workflows/rw_python_package.yaml
+
+  docker-image:
+    needs: intent
+    if: needs.intent.outputs.docker_artifact != 'skip'
+    uses: ./.github/workflows/rw_docker_operations.yaml
+```
+
+## Configuration
+
+See [Release Intent Configuration](./release-intent-configuration.mdx) for complete configuration options.
+
+## Related Workflows
+
+- [rw_parse_project_config](./rw_parse_project_config.mdx) - Parse project config
+- [Release Intent Configuration](./release-intent-configuration.mdx) - Configuration guide
+- [rw_release_complete](./rw_release_complete.mdx) - Production release
