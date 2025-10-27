@@ -78,6 +78,21 @@ const sidebars: SidebarsConfig = {
               id: 'workflows/rw_run_test',
               label: 'Run Test',
             },
+            {
+              type: 'doc',
+              id: 'workflows/rw_poetry_run_test',
+              label: 'Poetry Run Test',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_run_test_with_multi_py_versions',
+              label: 'Multi-Version Test',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_poetry_run_test_with_multi_py_versions',
+              label: 'Poetry Multi-Version Test',
+            },
           ],
         },
         {
@@ -86,8 +101,109 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
+              id: 'workflows/rw_organize_test_cov_reports',
+              label: 'Organize Coverage',
+            },
+            {
+              type: 'doc',
               id: 'workflows/rw_upload_test_cov_report',
               label: 'Upload Coverage',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '📦 Build & Deploy Workflows',
+          items: [
+            {
+              type: 'doc',
+              id: 'workflows/rw_python_package',
+              label: 'Python Package Build',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_push_pypi',
+              label: 'PyPI Publish',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_pre-building_test',
+              label: 'Pre-Building Test',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_checking_deployment_state',
+              label: 'Check Deployment State',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '🐳 Docker Workflows',
+          items: [
+            {
+              type: 'doc',
+              id: 'workflows/rw_docker_operations',
+              label: 'Docker Operations',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '📚 Documentation Workflows',
+          items: [
+            {
+              type: 'doc',
+              id: 'workflows/rw_docs_operations',
+              label: 'Docs Operations',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_documentation_deployment',
+              label: 'Docs Deployment',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '🔧 Configuration Workflows',
+          items: [
+            {
+              type: 'doc',
+              id: 'workflows/rw_parse_project_config',
+              label: 'Parse Project Config',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_parse_release_intent',
+              label: 'Parse Release Intent',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '🏷️ Git & Release Workflows',
+          items: [
+            {
+              type: 'doc',
+              id: 'workflows/rw_build_git-tag_and_create_github-release',
+              label: 'Git Tag & Release',
+            },
+            {
+              type: 'doc',
+              id: 'workflows/rw_build_git-tag_and_create_github-release_v2',
+              label: 'Git Tag & Release v2',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '🔍 Code Quality Workflows',
+          items: [
+            {
+              type: 'doc',
+              id: 'workflows/rw_sonarqube_scan',
+              label: 'SonarQube Scan',
             },
           ],
         },
