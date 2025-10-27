@@ -123,6 +123,11 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
+              id: 'workflows/release-intent-configuration',
+              label: '📝 Intent Configuration',
+            },
+            {
+              type: 'doc',
               id: 'workflows/rw_release_validation_complete',
               label: '✅ Validation Release',
             },
