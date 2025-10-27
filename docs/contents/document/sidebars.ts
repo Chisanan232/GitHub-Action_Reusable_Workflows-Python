@@ -101,12 +101,12 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_organize_test_cov_reports',
+              id: 'workflows/coverage_report/rw_organize_test_cov_reports',
               label: 'Organize Coverage',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_upload_test_cov_report',
+              id: 'workflows/coverage_report/rw_upload_test_cov_report',
               label: 'Upload Coverage',
             },
           ],
