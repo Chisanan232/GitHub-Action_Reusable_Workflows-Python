@@ -186,12 +186,12 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_build_git-tag_and_create_github-release',
+              id: 'workflows/git_tag_and_github_release/rw_build_git-tag_and_create_github-release',
               label: 'Git Tag & Release',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_build_git-tag_and_create_github-release_v2',
+              id: 'workflows/git_tag_and_github_release/rw_build_git-tag_and_create_github-release_v2',
               label: 'Git Tag & Release v2',
             },
           ],
