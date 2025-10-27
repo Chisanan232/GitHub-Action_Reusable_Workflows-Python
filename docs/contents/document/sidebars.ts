@@ -213,22 +213,22 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/release-intent-configuration',
+              id: 'workflows/release/release-intent-configuration',
               label: '📝 Intent Configuration',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_release_validation_complete',
+              id: 'workflows/release/rw_release_validation_complete',
               label: '✅ Validation Release',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_release_staging_complete',
+              id: 'workflows/release/rw_release_staging_complete',
               label: '🧪 Staging Release',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_release_complete',
+              id: 'workflows/release/rw_release_complete',
               label: '🚀 Production Release',
             },
           ],
