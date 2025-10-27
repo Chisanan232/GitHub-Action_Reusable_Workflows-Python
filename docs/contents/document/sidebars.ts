@@ -70,27 +70,27 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/rw_get_tests',
+              id: 'workflows/test/rw_get_tests',
               label: 'Get Tests',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_run_test',
+              id: 'workflows/test/rw_run_test',
               label: 'Run Test',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_poetry_run_test',
+              id: 'workflows/test/rw_poetry_run_test',
               label: 'Poetry Run Test',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_run_test_with_multi_py_versions',
+              id: 'workflows/test/rw_run_test_with_multi_py_versions',
               label: 'Multi-Version Test',
             },
             {
               type: 'doc',
-              id: 'workflows/rw_poetry_run_test_with_multi_py_versions',
+              id: 'workflows/test/rw_poetry_run_test_with_multi_py_versions',
               label: 'Poetry Multi-Version Test',
             },
           ],
