@@ -80,6 +80,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'workflows/test/rw_uv_run_test',
+              label: 'UV Run Test',
+            },
+            {
+              type: 'doc',
               id: 'workflows/test/rw_poetry_run_test',
               label: 'Poetry Run Test',
             },
