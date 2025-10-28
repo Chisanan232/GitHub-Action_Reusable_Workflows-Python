@@ -141,7 +141,7 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/github_action_logo.png',
     navbar: {
-      title: 'GitHub-Action_Reusable_Workflows-Python',
+      title: 'PyPython Reusable Workflows',
       logo: {
         alt: 'My Site Logo',
         src: 'img/github_action_logo.png',
