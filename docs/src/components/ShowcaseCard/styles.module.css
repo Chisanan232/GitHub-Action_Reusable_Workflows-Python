@@ -7,14 +7,15 @@
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  border: 2px solid var(--ifm-color-emphasis-200);
+  border: 1px solid var(--ifm-border-color);
+  box-shadow: 0 1px 3px rgba(27, 31, 35, 0.12);
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(140, 149, 159, 0.15);
   border-color: var(--ifm-color-primary);
 }
 
@@ -42,10 +43,10 @@
 }
 
 .templateBadge {
-  background: var(--ifm-color-success);
+  background: #1a7f37;
   color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2em;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -67,12 +68,13 @@
 }
 
 .tag {
-  background: var(--ifm-color-emphasis-200);
-  color: var(--ifm-color-emphasis-800);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  background: #ddf4ff;
+  color: #0969da;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2em;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  border: 1px solid #54aeff;
 }
 
 .cardButtons {
@@ -85,11 +87,8 @@
 }
 
 /* Dark mode adjustments */
-[data-theme='dark'] .cardImage {
-  background: linear-gradient(135deg, #434343 0%, #000000 100%);
-}
-
 [data-theme='dark'] .tag {
-  background: var(--ifm-color-emphasis-300);
-  color: var(--ifm-color-emphasis-900);
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+  border-color: #1f6feb;
 }

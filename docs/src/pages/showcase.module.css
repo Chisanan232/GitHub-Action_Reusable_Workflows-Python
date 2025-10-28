@@ -17,7 +17,7 @@
   font-size: 3rem;
   font-weight: 800;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0969da 0%, #8250df 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -112,7 +112,7 @@
 
 /* Dark mode adjustments */
 [data-theme='dark'] .showcaseTitle {
-  background: linear-gradient(135deg, #a8b5ff 0%, #c79fff 100%);
+  background: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
