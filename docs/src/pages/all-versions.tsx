@@ -26,12 +26,6 @@ export default function VersionsPage() {
       name: 'current',
       label: 'Next',
       path: `${baseUrl}docs/next/introduction`,
-      isLast: false,
-    },
-    {
-      name: '0.0.1',
-      label: '0.0.1',
-      path: `${baseUrl}docs/0.0.1/introduction`,
       isLast: true,
     },
   ];
@@ -41,12 +35,6 @@ export default function VersionsPage() {
       name: 'current',
       label: 'Next',
       path: `${baseUrl}dev/next`,
-      isLast: false,
-    },
-    {
-      name: '0.0.1',
-      label: '0.0.1',
-      path: `${baseUrl}dev/0.0.1`,
       isLast: true,
     },
   ];
