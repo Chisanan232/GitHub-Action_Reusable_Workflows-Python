@@ -2,191 +2,363 @@
  * CSS files with the .module.css suffix will be treated as CSS modules
  * and scoped locally.
  * 
- * Home page styling with vibrant Slack-inspired design
+ * Modern home page styling inspired by clean, professional design
  */
 
 .heroBanner {
-  padding: 6rem 0;
-  text-align: center;
-  position: relative;
+  padding: 0;
+  background: #f6f8fa;
+  border-bottom: 1px solid var(--ifm-border-color);
   overflow: hidden;
-  background: linear-gradient(135deg, #4a154b 0%, #36c5f0 50%, #2eb67d 100%);
-  color: white;
-  min-height: 60vh;
-  display: flex;
+}
+
+[data-theme='dark'] .heroBanner {
+  background: var(--github-gray-1);
+}
+
+.heroContainer {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 80px 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
   align-items: center;
+  min-height: 600px;
 }
 
-.heroBanner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(74, 21, 75, 0.9) 0%, 
-    rgba(54, 197, 240, 0.8) 35%, 
-    rgba(46, 182, 125, 0.8) 65%,
-    rgba(236, 178, 46, 0.7) 85%,
-    rgba(224, 30, 90, 0.6) 100%
-  );
-  z-index: 1;
-  pointer-events: none; /* Allow clicks to pass through */
-}
-
-.heroBanner .container {
-  position: relative;
-  z-index: 3; /* Higher z-index to ensure content is above pseudo-elements */
-}
-
-.heroBanner h1 {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(45deg, #ffffff, #f0f0f0, #ffffff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.heroBanner .hero__subtitle {
-  font-size: 1.5rem;
-  margin-bottom: 3rem;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-  font-weight: 400;
-}
-
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 4rem 2rem;
-    min-height: 50vh;
-  }
-  
-  .heroBanner h1 {
-    font-size: 2.5rem;
-  }
-  
-  .heroBanner .hero__subtitle {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-  }
-}
-
-.buttons {
+.heroContent {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 24px;
+  z-index: 2;
+}
+
+.heroTitle {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--ifm-font-color-base);
+  letter-spacing: -0.02em;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--github-gray-6);
+  margin: 0;
+  max-width: 540px;
+}
+
+[data-theme='dark'] .heroSubtitle {
+  color: var(--github-gray-7);
+}
+
+.heroButtons {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
   flex-wrap: wrap;
 }
 
-/* Enhanced button styling for maximum visibility */
-.buttons .button {
-  font-size: 1.2rem;
+.heroButton {
+  font-size: 1rem;
   font-weight: 600;
-  padding: 1rem 2.5rem;
-  border-radius: 50px;
+  padding: 12px 32px;
+  border-radius: 6px;
   text-decoration: none;
-  transition: all 0.3s ease;
-  border: 3px solid transparent;
-  position: relative;
-  overflow: hidden;
-  text-transform: none;
-  letter-spacing: 0.5px;
+  transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+  border: 1px solid transparent;
 }
 
-.buttons .button--secondary {
-  background: rgba(255, 255, 255, 0.95);
-  color: #4a154b;
-  border-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-}
-
-.buttons .button--secondary:hover {
-  background: #36c5f0;
+.heroButton.button--primary {
+  background: #1a7f37;
   color: white;
-  border-color: #36c5f0;
-  transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(54, 197, 240, 0.4);
+  border-color: rgba(27, 31, 36, 0.15);
+  box-shadow: 0 1px 0 rgba(27, 31, 35, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-.buttons .button--secondary::before {
-  content: '';
+.heroButton.button--primary:hover {
+  background: #116329;
+  color: white;
+  text-decoration: none;
+  box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transform: translateY(-1px);
+}
+
+.heroButton.button--secondary {
+  background: transparent;
+  color: var(--github-blue);
+  border: 1px solid var(--ifm-border-color);
+}
+
+.heroButton.button--secondary:hover {
+  background: var(--github-gray-0);
+  border-color: var(--github-gray-3);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+[data-theme='dark'] .heroButton.button--secondary:hover {
+  background: var(--github-gray-3);
+}
+
+/* Visual section with overlapping translucent layers */
+.heroVisual {
+  position: relative;
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visualContainer {
+  position: relative;
+  width: 500px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Background layer - GitHub Actions logo */
+.backgroundLayer {
   position: absolute;
-  top: 0;
-  left: -100%;
+  width: 450px;
+  height: 350px;
+  background: rgba(9, 105, 218, 0.08);
+  border: 1px solid rgba(9, 105, 218, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(9, 105, 218, 0.12);
+  transform: rotate(-2deg);
+  transition: all 0.4s ease;
+  z-index: 1;
+}
+
+[data-theme='dark'] .backgroundLayer {
+  background: rgba(31, 111, 235, 0.1);
+  border-color: rgba(31, 111, 235, 0.25);
+  box-shadow: 0 8px 32px rgba(31, 111, 235, 0.15);
+}
+
+.backgroundLayer:hover {
+  transform: rotate(-2deg) translateY(-8px);
+  box-shadow: 0 12px 48px rgba(9, 105, 218, 0.2);
+}
+
+/* Foreground layer - Python logo (translucent) */
+.foregroundLayer {
+  position: absolute;
+  width: 380px;
+  height: 300px;
+  background: rgba(130, 80, 223, 0.12);
+  border: 1px solid rgba(130, 80, 223, 0.25);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  box-shadow: 0 12px 40px rgba(130, 80, 223, 0.15);
+  transform: rotate(2deg) translate(30px, 20px);
+  transition: all 0.4s ease;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+[data-theme='dark'] .foregroundLayer {
+  background: rgba(163, 113, 247, 0.15);
+  border-color: rgba(163, 113, 247, 0.3);
+  box-shadow: 0 12px 40px rgba(163, 113, 247, 0.2);
+}
+
+.foregroundLayer:hover {
+  transform: rotate(2deg) translate(30px, 10px);
+  box-shadow: 0 16px 56px rgba(130, 80, 223, 0.25);
+  opacity: 1;
+}
+
+.githubLogo {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s;
-  pointer-events: none; /* Ensure shimmer effect doesn't block clicks */
-  z-index: -1; /* Place shimmer behind button text */
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(9, 105, 218, 0.2));
 }
 
-.buttons .button--secondary:hover::before {
-  left: 100%;
+.pythonLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(130, 80, 223, 0.3));
 }
 
-/* Add a primary button variant for more options */
-.buttons .button--primary {
-  background: linear-gradient(45deg, #2eb67d, #36c5f0);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 8px 25px rgba(46, 182, 125, 0.3);
+/* Responsive design */
+@media screen and (max-width: 996px) {
+  .heroContainer {
+    grid-template-columns: 1fr;
+    gap: 60px;
+    padding: 60px 24px;
+    min-height: auto;
+  }
+
+  .heroTitle {
+    font-size: 3rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1.125rem;
+  }
+
+  .heroVisual {
+    height: 400px;
+  }
+
+  .visualContainer {
+    width: 400px;
+    height: 320px;
+  }
+
+  .backgroundLayer {
+    width: 360px;
+    height: 280px;
+    padding: 30px;
+  }
+
+  .foregroundLayer {
+    width: 300px;
+    height: 240px;
+    padding: 40px;
+    transform: rotate(2deg) translate(20px, 15px);
+  }
+
+  .foregroundLayer:hover {
+    transform: rotate(2deg) translate(20px, 8px);
+  }
 }
 
-.buttons .button--primary:hover {
-  background: linear-gradient(45deg, #36c5f0, #2eb67d);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(46, 182, 125, 0.5);
+@media screen and (max-width: 768px) {
+  .heroContainer {
+    padding: 40px 20px;
+  }
+
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+
+  .heroButtons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .heroButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .heroVisual {
+    height: 300px;
+  }
+
+  .visualContainer {
+    width: 300px;
+    height: 240px;
+  }
+
+  .backgroundLayer {
+    width: 280px;
+    height: 220px;
+    padding: 20px;
+  }
+
+  .foregroundLayer {
+    width: 230px;
+    height: 180px;
+    padding: 30px;
+    transform: rotate(2deg) translate(15px, 12px);
+  }
+
+  .foregroundLayer:hover {
+    transform: rotate(2deg) translate(15px, 6px);
+  }
 }
 
-/* Animated background elements */
-.heroBanner::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 50px 50px;
-  animation: float 20s linear infinite;
-  z-index: 1;
-  pointer-events: none; /* Allow clicks to pass through */
+/* Animation on load */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
+@keyframes slideInRotate {
+  from {
+    opacity: 0;
+    transform: rotate(-2deg) translateX(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-2deg) translateX(0) scale(1);
+  }
+}
+
+@keyframes slideInRotateReverse {
+  from {
+    opacity: 0;
+    transform: rotate(2deg) translate(80px, 20px) scale(0.9);
+  }
+  to {
+    opacity: 0.85;
+    transform: rotate(2deg) translate(30px, 20px) scale(1);
+  }
+}
+
+.heroContent {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.backgroundLayer {
+  animation: slideInRotate 0.8s ease-out 0.2s backwards;
+}
+
+.foregroundLayer {
+  animation: slideInRotateReverse 0.8s ease-out 0.5s backwards;
+}
+
+/* Floating animation for subtle movement */
 @keyframes float {
-  0% { transform: rotate(0deg) translate(0, 0); }
-  100% { transform: rotate(360deg) translate(0, 0); }
+  0%, 100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-2deg) translateY(-10px);
+  }
 }
 
-/* Dark mode adjustments */
-[data-theme='dark'] .heroBanner {
-  background: linear-gradient(135deg, #2a0c28 0%, #1e77a1 50%, #1a6b29 100%);
+@keyframes floatReverse {
+  0%, 100% {
+    transform: rotate(2deg) translate(30px, 20px);
+  }
+  50% {
+    transform: rotate(2deg) translate(30px, 10px);
+  }
 }
 
-[data-theme='dark'] .heroBanner::before {
-  background: linear-gradient(135deg, 
-    rgba(42, 12, 40, 0.9) 0%, 
-    rgba(30, 119, 161, 0.8) 35%, 
-    rgba(26, 107, 41, 0.8) 65%,
-    rgba(212, 161, 22, 0.7) 85%,
-    rgba(192, 25, 71, 0.6) 100%
-  );
+.backgroundLayer {
+  animation: slideInRotate 0.8s ease-out 0.2s backwards, float 6s ease-in-out 1s infinite;
 }
 
-[data-theme='dark'] .buttons .button--secondary {
-  background: rgba(255, 255, 255, 0.9);
-  color: #2a0c28;
-}
-
-[data-theme='dark'] .buttons .button--secondary:hover {
-  background: #58d5f7;
-  color: white;
-  border-color: #58d5f7;
-  box-shadow: 0 12px 35px rgba(88, 213, 247, 0.4);
+.foregroundLayer {
+  animation: slideInRotateReverse 0.8s ease-out 0.5s backwards, floatReverse 6s ease-in-out 1.5s infinite;
 }

@@ -1,11 +1,20 @@
 .features {
   display: flex;
   align-items: center;
-  padding: 2rem 0;
+  padding: 80px 0;
   width: 100%;
+  background: white;
+}
+
+[data-theme='dark'] .features {
+  background: var(--github-gray-1);
 }
 
 .featureSvg {
-  height: 200px;
-  width: 200px;
+  height: 180px;
+  width: 180px;
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--github-gradient-subtle);
+  border: 1px solid var(--ifm-border-color);
 }

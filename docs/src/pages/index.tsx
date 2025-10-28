@@ -24,18 +24,50 @@ function HomepageHeader() {
     (stableVersion?.name ? `${docsBasePath}/${stableVersion.name}/introduction` : `${docsBasePath}/next/introduction`);
   
   return (
-    <header className={clsx('hero hero--primary', styles.heroBanner)}>
-      <div className="container">
-        <Heading as="h1" className="hero__title">
-          {siteConfig.title}
-        </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
-        <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to={stableDocsPath}>
-            GitHub Action Reusable Workflow Documentation
-          </Link>
+    <header className={styles.heroBanner}>
+      <div className={styles.heroContainer}>
+        <div className={styles.heroContent}>
+          <Heading as="h1" className={styles.heroTitle}>
+            GitHub Action
+            <br />
+            Reusable Workflows
+          </Heading>
+          <p className={styles.heroSubtitle}>
+            Production-ready CI/CD workflows for Python projects, featuring automated testing, 
+            deployment, and release management with comprehensive documentation.
+          </p>
+          <div className={styles.heroButtons}>
+            <Link
+              className={clsx('button button--primary button--lg', styles.heroButton)}
+              to={stableDocsPath}>
+              Get Started →
+            </Link>
+            <Link
+              className={clsx('button button--secondary button--lg', styles.heroButton)}
+              to="/showcase">
+              View Showcase
+            </Link>
+          </div>
+        </div>
+        <div className={styles.heroVisual}>
+          <div className={styles.visualContainer}>
+            {/* Background layer - GitHub Actions */}
+            <div className={styles.backgroundLayer}>
+              <img 
+                src={require('@site/static/img/github_action_with_text_logo.png').default}
+                alt="GitHub Actions" 
+                className={styles.githubLogo}
+              />
+            </div>
+            {/* Foreground layer - Python (translucent) */}
+            <div className={styles.foregroundLayer}>
+              <img 
+                src={require('@site/static/img/python_logo_icon.png').default}
+                alt="Python" 
+                className={styles.pythonLogo}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </header>
