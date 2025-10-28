@@ -8,6 +8,7 @@
 #     * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
 #     * all_test_items_paths: The target paths of test items under test.
 #     * install_dependency_with_group: Install the dependency by UV configuration with dependency group setting. This parameter receive the dependency group naming.
+#     * pre_test_script: Shell script or bash command to run before executing tests (optional).
 #     * python-versions: JSON array of Python versions to test against. Default: '["3.13"]'
 #     * operating-systems: JSON array of operating systems to test on. Default: '["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'
 #
@@ -51,6 +52,11 @@ on:
         default: ''
       with-environment-variables:
         description: "Set the specific environment for the environment variables."
+        type: string
+        required: false
+        default: ''
+      pre_test_script:
+        description: "Shell script or bash command to run before executing tests (e.g., 'curl -s https://slack.com/api/auth.test -H \"Authorization: Bearer $SLACK_BOT_TOKEN\"')."
         type: string
         required: false
         default: ''
@@ -108,9 +114,11 @@ jobs:
         run: |
           uv pip install --group=${{ inputs.install_dependency_with_group }}
 
-      - name: Verify the Slack bot token
+      - name: Run pre-test script
+        if: ${{ inputs.pre_test_script != '' }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: |
-          curl -s https://slack.com/api/auth.test -H "Authorization: Bearer $SLACK_BOT_TOKEN"
+          ${{ inputs.pre_test_script }}
 
       - name: Run the specific tests with pytest
         if: ${{ inputs.test_type == '' }}

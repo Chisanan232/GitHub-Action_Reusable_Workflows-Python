@@ -33,45 +33,49 @@ graph TD
     E --> F{Dependency Group?}
     F -->|No Group| G[Install All Dependencies]
     F -->|With Group| H[Install Group Dependencies]
-    G --> I[Run Tests with PyTest]
+    G --> I{Pre-Test Script?}
     H --> I
-    I --> J[Generate Coverage Report]
-    J --> K[Upload Artifacts]
+    I -->|Yes| J[Run Pre-Test Script]
+    I -->|No| K[Run Tests with PyTest]
+    J --> K
+    K --> L[Generate Coverage Report]
+    L --> M[Upload Artifacts]
 ```
 
 ## Inputs
 
 ### Required Inputs
 
-| Input | Type | Description |
-|-------|------|-------------|
+| Input       | Type   | Description                                                  |
+|-------------|--------|--------------------------------------------------------------|
 | `test_type` | string | Type of tests to run (e.g., 'unit-test', 'integration-test') |
 
 ### Optional Inputs
 
-| Input | Type | Default | Description |
-|-------|------|---------|-------------|
-| `test_working_directory` | string | `'./'` | Working directory for test execution |
-| `test_folder` | string | `'./test'` | Folder path for test code |
-| `all_test_items_paths` | string | `'["./test"]'` | JSON array of test paths to execute |
-| `install_dependency_with_group` | string | `''` | UV dependency group to install (e.g., 'test', 'dev') |
-| `with-environment-variables` | string | `''` | Additional environment variables to set |
-| `max-parallel` | number | `0` | Maximum parallel jobs (0 = unlimited) |
-| `python-versions` | string | `'["3.13"]'` | JSON array of Python versions to test |
-| `operating-systems` | string | `'["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'` | JSON array of OS to test on |
+| Input                           | Type   | Default                                                           | Description                                          |
+|---------------------------------|--------|-------------------------------------------------------------------|------------------------------------------------------|
+| `test_working_directory`        | string | `'./'`                                                            | Working directory for test execution                 |
+| `test_folder`                   | string | `'./test'`                                                        | Folder path for test code                            |
+| `all_test_items_paths`          | string | `'["./test"]'`                                                    | JSON array of test paths to execute                  |
+| `install_dependency_with_group` | string | `''`                                                              | UV dependency group to install (e.g., 'test', 'dev') |
+| `with-environment-variables`    | string | `''`                                                              | Additional environment variables to set              |
+| `pre_test_script`               | string | `''`                                                              | Shell script or bash command to run before tests     |
+| `max-parallel`                  | number | `0`                                                               | Maximum parallel jobs (0 = unlimited)                |
+| `python-versions`               | string | `'["3.13"]'`                                                      | JSON array of Python versions to test                |
+| `operating-systems`             | string | `'["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'` | JSON array of OS to test on                          |
 
 ### Secrets
 
-| Secret | Required | Description |
-|--------|----------|-------------|
-| `e2e_test_api_token` | No | API token for end-to-end tests if needed |
+| Secret               | Required | Description                              |
+|----------------------|----------|------------------------------------------|
+| `e2e_test_api_token` | No       | API token for end-to-end tests if needed |
 
 ## Outputs
 
 This workflow uploads coverage reports as artifacts:
 
-| Artifact Name | Description |
-|---------------|-------------|
+| Artifact Name                                | Description                      |
+|----------------------------------------------|----------------------------------|
 | `coverage_<test_type>_<os>_<python_version>` | Coverage report file (.coverage) |
 
 ## Usage Examples
@@ -129,6 +133,20 @@ jobs:
       all_test_items_paths: '["./test/"]'
 ```
 
+### With Pre-Test Script
+
+```yaml
+jobs:
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_uv_run_test.yaml@master
+    with:
+      test_type: unit-test
+      pre_test_script: |
+        echo "Running pre-test validation..."
+        curl -s https://slack.com/api/auth.test -H "Authorization: Bearer $SLACK_BOT_TOKEN"
+      all_test_items_paths: '["./test/unit_test/"]'
+```
+
 ### End-to-End Testing with Secrets
 
 ```yaml
@@ -141,6 +159,7 @@ jobs:
       test_type: e2e-test
       all_test_items_paths: '["./test/e2e/"]'
       python-versions: '["3.13"]'
+      pre_test_script: 'echo "Starting E2E tests..." && ./scripts/setup-test-env.sh'
 ```
 
 ### Complete CI Pipeline
@@ -202,7 +221,26 @@ uv sync --locked --all-extras --dev
 uv pip install --group=<group-name>
 ```
 
-### Step 4: Test Execution
+### Step 4: Pre-Test Script (Optional)
+
+If `pre_test_script` is provided, runs custom commands before tests:
+
+```bash
+# Example: Verify API connectivity
+curl -s https://slack.com/api/auth.test -H "Authorization: Bearer $SLACK_BOT_TOKEN"
+
+# Example: Setup test environment
+./scripts/setup-test-env.sh
+```
+
+**Common use cases:**
+- Verify external service connectivity
+- Setup test databases or mock servers
+- Validate environment variables
+- Run database migrations
+- Initialize test fixtures
+
+### Step 5: Test Execution
 
 Runs tests using UV's pytest integration:
 
@@ -210,7 +248,7 @@ Runs tests using UV's pytest integration:
 E2E_TEST_API_TOKEN=${{ secrets.e2e_test_api_token }} uv run pytest <test-path>
 ```
 
-### Step 5: Coverage Collection
+### Step 6: Coverage Collection
 
 Renames and uploads coverage reports:
 
@@ -343,11 +381,11 @@ with:
 
 ### Speed Comparison
 
-| Tool | Dependency Installation | Virtual Environment |
-|------|------------------------|---------------------|
-| **UV** | ~1-2 seconds | ~0.5 seconds |
-| Poetry | ~30-60 seconds | ~5-10 seconds |
-| pip | ~20-40 seconds | ~3-5 seconds |
+| Tool   | Dependency Installation | Virtual Environment |
+|--------|-------------------------|---------------------|
+| **UV** | ~1-2 seconds            | ~0.5 seconds        |
+| Poetry | ~30-60 seconds          | ~5-10 seconds       |
+| pip    | ~20-40 seconds          | ~3-5 seconds        |
 
 ### Key Benefits
 
@@ -431,15 +469,15 @@ with:
 
 ## Comparison with Other Test Workflows
 
-| Feature | rw_uv_run_test | rw_run_test | rw_poetry_run_test |
-|---------|----------------|-------------|-------------------|
-| Dependency Manager | UV | pip/uv | Poetry |
-| Speed | ⚡ Fastest | Fast | Moderate |
-| Python Versions | 3.11+ | 3.8+ | 3.8+ |
-| Lock File | uv.lock | requirements.txt | poetry.lock |
-| Virtual Env | UV managed | Actions managed | Poetry managed |
-| Matrix Testing | ✅ Built-in | ✅ Built-in | ✅ Built-in |
-| Best For | Modern projects | Simple projects | Poetry projects |
+| Feature            | rw_uv_run_test  | rw_run_test      | rw_poetry_run_test |
+|--------------------|-----------------|------------------|--------------------|
+| Dependency Manager | UV              | pip/uv           | Poetry             |
+| Speed              | ⚡ Fastest       | Fast             | Moderate           |
+| Python Versions    | 3.11+           | 3.8+             | 3.8+               |
+| Lock File          | uv.lock         | requirements.txt | poetry.lock        |
+| Virtual Env        | UV managed      | Actions managed  | Poetry managed     |
+| Matrix Testing     | ✅ Built-in      | ✅ Built-in       | ✅ Built-in         |
+| Best For           | Modern projects | Simple projects  | Poetry projects    |
 
 ## Migration Guide
 
