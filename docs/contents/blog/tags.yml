@@ -1,0 +1,19 @@
+github-actions:
+  label: GitHub Actions
+  permalink: /github-actions
+  description: GitHub Actions workflows and automation
+
+ci-cd:
+  label: CI/CD
+  permalink: /ci-cd
+  description: Continuous Integration and Continuous Deployment
+
+python:
+  label: Python
+  permalink: /python
+  description: Python programming and development
+
+automation:
+  label: Automation
+  permalink: /automation
+  description: Workflow automation and DevOps practices
