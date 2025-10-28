@@ -162,6 +162,11 @@ const config: Config = {
           docsPluginId: 'dev',
         },
         {
+          to: '/showcase',
+          label: 'Showcase',
+          position: 'left',
+        },
+        {
           to: '/blog',
           label: 'Blog',
           position: 'left',
@@ -201,6 +206,10 @@ const config: Config = {
             {
               label: 'Dev',
               to: '/dev/next',
+            },
+            {
+              label: 'Showcase',
+              to: '/showcase',
             },
             {
               label: 'Blog',

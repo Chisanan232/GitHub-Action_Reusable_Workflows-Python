@@ -1,0 +1,127 @@
+.showcaseMain {
+  padding: 2rem 0;
+  min-height: calc(100vh - 60px);
+}
+
+.showcaseContainer {
+  max-width: 1280px;
+}
+
+.showcaseHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem 0;
+}
+
+.showcaseTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.showcaseDescription {
+  font-size: 1.25rem;
+  color: var(--ifm-color-emphasis-700);
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.showcaseFilters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 8px;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filterButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filterButton {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.showcaseCount {
+  color: var(--ifm-color-emphasis-600);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.showcaseFooter {
+  text-align: center;
+  margin-top: 4rem;
+  padding: 3rem 2rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 12px;
+}
+
+.showcaseFooter h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.showcaseFooter p {
+  font-size: 1.1rem;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 2rem;
+}
+
+.footerButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .showcaseTitle {
+    font-size: 2rem;
+  }
+
+  .showcaseDescription {
+    font-size: 1rem;
+  }
+
+  .showcaseFilters {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filterButtons {
+    width: 100%;
+  }
+
+  .showcaseCount {
+    width: 100%;
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .showcaseTitle {
+  background: linear-gradient(135deg, #a8b5ff 0%, #c79fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme='dark'] .showcaseFilters {
+  background: var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .showcaseFooter {
+  background: var(--ifm-color-emphasis-200);
+}
