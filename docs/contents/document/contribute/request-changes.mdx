@@ -6,19 +6,19 @@ sidebar_position: 2
 
 # Requesting Additions or Changes
 
-Have an idea for improving Slack MCP Server? We welcome feature requests and suggestions from our community! This guide will help you submit effective feature requests.
+Have an idea for improving GitHub Action Reusable Workflows? We welcome feature requests and suggestions from our community! This guide will help you submit effective feature requests.
 
 ## Before Submitting
 
 Before submitting a feature request, please:
 
-1. **Check existing requests**: Search the [GitHub Issues](https://github.com/Chisanan232/slack-mcp-server/issues) to see if someone has already suggested a similar feature.
+1. **Check existing requests**: Search the [GitHub Issues](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/issues) to see if someone has already suggested a similar feature.
 2. **Read the documentation**: Make sure the feature doesn't already exist or isn't already planned in our roadmap.
 3. **Consider compatibility**: Think about how your suggestion fits with the existing architecture and goals of the project.
 
 ## How to Submit a Feature Request
 
-Please submit feature requests through our [GitHub Issues](https://github.com/Chisanan232/slack-mcp-server/issues) page using the "Feature Request" template.
+Please submit feature requests through our [GitHub Issues](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/issues) page using the "Feature Request" template.
 
 ### What to Include
 
@@ -44,37 +44,37 @@ An effective feature request should include:
 ## Example Feature Request
 
 ```
-Title: Add WebSocket transport option for real-time updates
+Title: Add support for Docker container workflows
 
 Problem Statement:
-Currently, Slack MCP Server supports HTTP streaming and SSE for client communication. 
-However, for truly bidirectional real-time communication, these options have limitations. 
-Many modern web applications would benefit from WebSocket support for more efficient 
-real-time updates and lower latency.
+Currently, GitHub Action Reusable Workflows focuses on Python testing and deployment.
+However, many Python projects also need Docker container building and publishing.
+Adding Docker workflow support would make this more comprehensive for containerized applications.
 
 Proposed Solution:
-Add a new transport option "websocket" that implements the WebSocket protocol. This would:
-- Allow bidirectional communication between client and server
-- Reduce overhead compared to HTTP polling or SSE
-- Enable real-time updates for task changes, comments, etc.
-- Follow the same MCP message format as existing transports
+Add new reusable workflows for Docker operations:
+- Build and test Docker images
+- Multi-architecture builds (amd64, arm64)
+- Push to Docker Hub and GitHub Container Registry
+- Security scanning with Trivy or similar tools
 
 The implementation should include:
-1. New WebSocketTransport class implementing the Transport interface
-2. Client-side connection handling and reconnection logic
-3. Support for the same authentication mechanisms as existing transports
+1. New rw_docker_build.yaml workflow
+2. Support for Docker Compose testing
+3. Integration with existing test workflows
+4. Proper caching for faster builds
 
 Alternative Solutions:
-1. Enhance the SSE implementation with custom headers for upstream communication
-2. Implement long-polling with improved efficiency
+1. Extend existing workflows with Docker build steps
+2. Create separate Docker-specific workflow repository
 
 Implementation Considerations:
-This would require adding a WebSocket library dependency (e.g., websockets for Python).
-Care should be taken to ensure proper connection management and resource cleanup.
+This would require careful handling of Docker credentials and registry authentication.
+Should support both Docker Hub and GHCR.
 
 Impact and Importance:
-This feature would greatly improve real-time applications built on Slack MCP Server,
-reducing latency and improving the user experience for collaborative tools.
+This feature would greatly benefit Python projects that deploy as containers,
+providing a complete CI/CD solution from testing to deployment.
 ```
 
 ## After Submitting
@@ -85,4 +85,4 @@ After you've submitted a feature request:
 - Be open to feedback and suggestions
 - Consider contributing to the implementation if you have the skills
 
-Thank you for helping improve Slack MCP Server!
+Thank you for helping improve GitHub Action Reusable Workflows!

@@ -34,7 +34,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to={stableDocsPath}>
-            Slack-MCP-Server Documentation
+            GitHub Action Reusable Workflow Documentation
           </Link>
         </div>
       </div>

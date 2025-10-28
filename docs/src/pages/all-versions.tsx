@@ -54,10 +54,10 @@ export default function VersionsPage() {
   return (
     <Layout
       title="Versions"
-      description="Slack MCP Server Documentation Versions">
+      description="GitHub Action Reusable Workflow Documentation Versions">
       <main className="container margin-vert--lg">
         <Heading as="h1">
-          Slack MCP Server Documentation Versions
+          GitHub Action Reusable Workflow Documentation Versions
         </Heading>
 
         <div className="margin-bottom--lg">

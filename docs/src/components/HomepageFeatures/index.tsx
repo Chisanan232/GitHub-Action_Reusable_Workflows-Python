@@ -15,18 +15,18 @@ const FeatureList: FeatureItem[] = [
     image: require('@site/static/img/easy_to_use.png').default,
     description: (
       <>
-        Slack MCP Server is designed to be easily installed and configured.
-        Get your Slack integration up and running quickly with minimal setup.
+        GitHub Action Reusable Workflows are designed to be easily integrated into your projects.
+        Get your CI/CD pipeline up and running quickly with minimal configuration.
       </>
     ),
   },
   {
-    title: 'Base on Python',
+    title: 'Built for Python',
     image: require('@site/static/img/python_base.png').default,
     description: (
       <>
-        Built with Python for excellent readability and maintainability.
-        Leverage Python's extensive ecosystem and simplicity for your Slack automation needs.
+        Specifically designed for Python projects with support for pip, Poetry, and various testing frameworks.
+        Leverage battle-tested workflows for testing, deployment, and release automation.
       </>
     ),
   },
