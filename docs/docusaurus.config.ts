@@ -7,7 +7,7 @@ import remarkMdxCodeMeta from 'remark-mdx-code-meta';
 const config: Config = {
   title: 'GitHub Action Reusable Workflows',
   tagline: '🚀 Reusable CI/CD workflows for Python projects',
-  favicon: 'img/Slack_icon_2019.svg.png',
+  favicon: 'img/github_action_logo.png',
 
   // Set the production url of your site here
   url: 'https://chisanan232.github.io',
@@ -139,12 +139,12 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/Slack_icon_2019.svg.png',
+    image: 'img/github_action_logo.png',
     navbar: {
       title: 'GitHub-Action_Reusable_Workflows-Python',
       logo: {
         alt: 'My Site Logo',
-        src: 'img/Slack_icon_2019.svg.png',
+        src: 'img/github_action_logo.png',
       },
       items: [
         {
