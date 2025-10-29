@@ -425,7 +425,7 @@ jobs:
       docker-run-options: ${{ needs.config.outputs.docker_run_options }}
 
   release_docs:
-    uses: ./.github/workflows/rw_docs_operations.yaml
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
     needs: [config, intent, prepare_docs_matrix, bump_version, build_git-tag_and_create_github-release]
     if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docs != 'skip' && needs.prepare_docs_matrix.outputs.has_sections == 'true'
     with:

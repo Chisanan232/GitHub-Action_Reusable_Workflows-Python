@@ -9,7 +9,7 @@ on:
 #     Documentation
 #     Doc - CI workflow
       - ".github/workflows/documentation.yaml"
-      - ".github/workflows/rw_docs_operations.yaml"
+      - ".github/workflows/rw_docusaurus_operations.yaml"
       - "scripts/ci/**documentation**.sh"
 #     Doc - Font-End config
       - "docs/package.json"
@@ -95,7 +95,7 @@ jobs:
     name: Build Documentation
     if: needs.check_docs_changes.outputs.should_deploy == 'true'
     needs: [check_docs_changes]
-    uses: ./.github/workflows/rw_docs_operations.yaml
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
     with:
       operation: build
       node-version: '22'

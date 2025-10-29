@@ -6,7 +6,7 @@ on:
       # Documentation CI workflow
       - ".github/workflows/docs-build-check.yaml"
       - ".github/workflows/documentation.yaml"
-      - ".github/workflows/rw_docs_operations.yaml"
+      - ".github/workflows/rw_docusaurus_operations.yaml"
       # Documentation dependencies
       - "docs/package.json"
       - "docs/pnpm-lock.yaml"
@@ -41,7 +41,7 @@ concurrency:
 jobs:
   build_and_test_docs:
     name: Build & Test Documentation
-    uses: ./.github/workflows/rw_docs_operations.yaml
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
     with:
       operation: test
       node-version: '22'

@@ -133,7 +133,7 @@ jobs:
       docker-run-options: ${{ needs.config.outputs.docker_run_options }}
 
   docs-build:
-    uses: ./.github/workflows/rw_docs_operations.yaml
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
     needs: [config, intent-parse]
     with:
       operation: 'test'
