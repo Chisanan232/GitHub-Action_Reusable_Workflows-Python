@@ -1,0 +1,90 @@
+---
+id: report-bug
+title: Report a Bug
+sidebar_position: 1
+---
+
+# Reporting Bugs
+
+We appreciate your help in identifying and reporting bugs in GitHub Action Reusable Workflow. A well-documented bug report helps us understand and fix issues quickly.
+
+## Before Reporting
+
+Before submitting a bug report, please:
+
+1. **Check existing issues**: Search the [GitHub Issues](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/issues) to see if the bug has already been reported.
+2. **Update to the latest version**: Verify that you're using the latest version of the software, as the bug may have been fixed already.
+3. **Confirm it's a bug**: Make sure the behavior you're experiencing is truly a bug and not expected behavior or a configuration issue.
+
+## How to Submit a Bug Report
+
+Please submit bug reports through our [GitHub Issues](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/issues) page using the "Bug Report" template.
+
+### What to Include
+
+An effective bug report should include:
+
+1. **Clear and descriptive title**: Summarize the issue concisely.
+2. **Environment details**:
+   - Operating system and version
+   - Python version
+   - GitHub Actions runner version
+   - Workflow version being used
+   - Any relevant configuration
+
+3. **Steps to reproduce**:
+   - Be specific and provide a step-by-step guide to reproduce the issue
+   - Include example code if applicable
+   - Mention any specific conditions or setup required
+
+4. **Expected behavior**: Describe what you expected to happen.
+
+5. **Actual behavior**: Describe what actually happened.
+
+6. **Error messages**: Include any error messages or logs (use code blocks for formatting).
+
+7. **Screenshots or recordings**: If applicable, include visual evidence of the issue.
+
+8. **Possible solution**: If you have insights into what might be causing the issue or ideas for fixing it, please share them.
+
+## Example Bug Report
+
+```
+Title: Test workflow fails with Poetry cache error
+
+Environment:
+- OS: ubuntu-latest (GitHub Actions)
+- Python: 3.11
+- Workflow: rw_poetry_run_test.yaml@v1.2.0
+- Project uses Poetry 1.7.1
+
+Steps to Reproduce:
+1. Use rw_poetry_run_test.yaml workflow in a project
+2. Run workflow with cache enabled
+3. Workflow fails during poetry install step
+
+Expected Behavior:
+Poetry dependencies should be cached and installed successfully.
+
+Actual Behavior:
+Workflow fails with the following error:
+```
+[ERROR] Poetry cache restoration failed
+Error: Cache not found for input keys: poetry-cache-ubuntu-latest-3.11-abc123
+Poetry install failed with exit code 1
+```
+
+Additional Information:
+This only happens on the first run after updating Poetry version.
+Subsequent runs work fine.
+```
+
+## After Submitting
+
+After you've submitted a bug report:
+
+- Be responsive to questions about the issue
+- Provide additional information if requested
+- Consider helping test the fix when it becomes available
+
+Thank you for helping improve GitHub Action Reusable Workflows!

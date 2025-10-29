@@ -126,7 +126,7 @@ jobs:
       - name: Install Python ${{ inputs.run_with_python_version }}
 #        if: ${{ inputs.upload-to-codecov == true || inputs.upload-to-coveralls == true }}
         if: ${{ inputs.upload-to-coveralls == true }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.run_with_python_version }}
 

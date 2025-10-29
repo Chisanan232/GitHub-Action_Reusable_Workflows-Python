@@ -1,0 +1,63 @@
+---
+id: rw_documentation_deployment
+title: Documentation Deployment Workflow
+sidebar_position: 19
+---
+
+# Documentation Deployment Workflow
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_documentation_deployment.yaml)
+
+Deploy documentation to GitHub Pages.
+
+## Overview
+
+This workflow deploys built documentation to GitHub Pages, handling the complete deployment process including building, uploading, and publishing.
+
+## When to Use
+
+- ✅ You need to deploy documentation to GitHub Pages
+- ✅ You want automated documentation publishing
+- ✅ You use Docusaurus or static site generators
+
+## Inputs
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `docs_path` | string | `'docs'` | Path to documentation |
+| `build_command` | string | `'pnpm build'` | Build command |
+| `artifact_path` | string | `'docs/build'` | Path to built docs |
+
+## Usage Examples
+
+### Basic Deployment
+
+```yaml
+jobs:
+  deploy-docs:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_documentation_deployment.yaml@master
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+```
+
+### Custom Build Command
+
+```yaml
+jobs:
+  deploy-docs:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_documentation_deployment.yaml@master
+    with:
+      build_command: 'npm run build'
+      artifact_path: 'build'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+```
+
+## Related Workflows
+
+- [rw_docs_operations](rw_docs_operations.mdx) - Documentation operations
+- [Documentation Pipeline](/dev/next/ci-cd/documentation-deployment) - Complete pipeline
