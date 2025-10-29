@@ -152,7 +152,7 @@ jobs:
           mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Upload code coverage result file
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage_${{ inputs.test_type }}_${{ matrix.os }}_${{ matrix.python-version }}
           path: ${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
