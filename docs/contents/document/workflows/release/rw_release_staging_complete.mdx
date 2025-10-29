@@ -245,7 +245,7 @@ docker-ghcr-staging:
 
 ```yaml
 docs-preview:
-  uses: ./.github/workflows/rw_docs_operations.yaml
+  uses: ./.github/workflows/rw_docusaurus_operations.yaml
   with:
     operation: 'deploy'
     branch: ${{ needs.config.outputs.docs_preview_branch }}
