@@ -159,8 +159,8 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'workflows/document/rw_docs_operations',
-              label: 'Docs Operations',
+              id: 'workflows/document/rw_docusaurus_operations',
+              label: 'Docusaurus Operations',
             },
             {
               type: 'doc',
