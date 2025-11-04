@@ -10,7 +10,7 @@ from unittest.mock import mock_open, patch
 import pytest
 import yaml
 
-from scripts.ci.release_intent import (
+from ci.release_intent import (
     ReleaseIntentError,
     get_defaults,
     get_workflow_dispatch_inputs,
@@ -524,14 +524,14 @@ class TestMainFunction:
         mock_schema = {"type": "object"}
         mock_intent = None  # No intent file
 
-        with patch("scripts.ci.release_intent.load_schema", return_value=mock_schema):
-            with patch("scripts.ci.release_intent.load_intent_file", return_value=mock_intent):
+        with patch("ci.release_intent.load_schema", return_value=mock_schema):
+            with patch("ci.release_intent.load_intent_file", return_value=mock_intent):
                 with patch(
-                    "scripts.ci.release_intent.get_workflow_dispatch_inputs",
+                    "ci.release_intent.get_workflow_dispatch_inputs",
                     return_value={"level": "", "python": "", "docker": "", "docs": "", "notes": ""},
                 ):
-                    with patch("scripts.ci.release_intent.validate_intent"):
-                        with patch("scripts.ci.release_intent.write_github_outputs"):
+                    with patch("ci.release_intent.validate_intent"):
+                        with patch("ci.release_intent.write_github_outputs"):
                             with patch("builtins.print") as mock_print:
                                 result = main()
 
@@ -548,14 +548,14 @@ class TestMainFunction:
         mock_schema = {"type": "object"}
         mock_intent = {"release": False, "level": "major", "notes": "Custom notes"}
 
-        with patch("scripts.ci.release_intent.load_schema", return_value=mock_schema):
-            with patch("scripts.ci.release_intent.load_intent_file", return_value=mock_intent):
+        with patch("ci.release_intent.load_schema", return_value=mock_schema):
+            with patch("ci.release_intent.load_intent_file", return_value=mock_intent):
                 with patch(
-                    "scripts.ci.release_intent.get_workflow_dispatch_inputs",
+                    "ci.release_intent.get_workflow_dispatch_inputs",
                     return_value={"level": "", "python": "", "docker": "", "docs": "", "notes": ""},
                 ):
-                    with patch("scripts.ci.release_intent.validate_intent"):
-                        with patch("scripts.ci.release_intent.write_github_outputs"):
+                    with patch("ci.release_intent.validate_intent"):
+                        with patch("ci.release_intent.write_github_outputs"):
                             with patch("builtins.print") as mock_print:
                                 result = main()
 
@@ -568,7 +568,7 @@ class TestMainFunction:
 
     def test_main_release_intent_error(self) -> None:
         """Test main function with ReleaseIntentError."""
-        with patch("scripts.ci.release_intent.load_schema", side_effect=ReleaseIntentError("Schema error")):
+        with patch("ci.release_intent.load_schema", side_effect=ReleaseIntentError("Schema error")):
             with patch("builtins.print") as mock_print:
                 result = main()
 
@@ -577,7 +577,7 @@ class TestMainFunction:
 
     def test_main_unexpected_error(self) -> None:
         """Test main function with unexpected error."""
-        with patch("scripts.ci.release_intent.load_schema", side_effect=RuntimeError("Unexpected error")):
+        with patch("ci.release_intent.load_schema", side_effect=RuntimeError("Unexpected error")):
             with patch("builtins.print") as mock_print:
                 result = main()
 
@@ -596,11 +596,11 @@ class TestMainFunction:
             "notes": "Workflow notes",
         }
 
-        with patch("scripts.ci.release_intent.load_schema", return_value=mock_schema):
-            with patch("scripts.ci.release_intent.load_intent_file", return_value=mock_intent):
-                with patch("scripts.ci.release_intent.get_workflow_dispatch_inputs", return_value=mock_workflow_inputs):
-                    with patch("scripts.ci.release_intent.validate_intent"):
-                        with patch("scripts.ci.release_intent.write_github_outputs"):
+        with patch("ci.release_intent.load_schema", return_value=mock_schema):
+            with patch("ci.release_intent.load_intent_file", return_value=mock_intent):
+                with patch("ci.release_intent.get_workflow_dispatch_inputs", return_value=mock_workflow_inputs):
+                    with patch("ci.release_intent.validate_intent"):
+                        with patch("ci.release_intent.write_github_outputs"):
                             with patch("builtins.print") as mock_print:
                                 result = main()
 
@@ -618,14 +618,14 @@ class TestMainFunction:
         mock_schema = {"type": "object"}
         mock_intent = {"release": "invalid"}  # Invalid data
 
-        with patch("scripts.ci.release_intent.load_schema", return_value=mock_schema):
-            with patch("scripts.ci.release_intent.load_intent_file", return_value=mock_intent):
+        with patch("ci.release_intent.load_schema", return_value=mock_schema):
+            with patch("ci.release_intent.load_intent_file", return_value=mock_intent):
                 with patch(
-                    "scripts.ci.release_intent.get_workflow_dispatch_inputs",
+                    "ci.release_intent.get_workflow_dispatch_inputs",
                     return_value={"level": "", "python": "", "docker": "", "docs": "", "notes": ""},
                 ):
                     with patch(
-                        "scripts.ci.release_intent.validate_intent", side_effect=ReleaseIntentError("Validation failed")
+                        "ci.release_intent.validate_intent", side_effect=ReleaseIntentError("Validation failed")
                     ):
                         with patch("builtins.print") as mock_print:
                             result = main()
