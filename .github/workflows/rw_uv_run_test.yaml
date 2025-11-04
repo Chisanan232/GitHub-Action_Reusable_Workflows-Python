@@ -106,6 +106,7 @@ jobs:
 
       - name: Install all the project dependencies
         if: ${{ inputs.install_dependency_with_group == '' }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: uv sync --locked --all-extras --dev
 
       - name: Build Python runtime environment by UV with dependency group *${{ inputs.install_dependency_with_group }}*
