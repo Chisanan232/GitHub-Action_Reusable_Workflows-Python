@@ -44,3 +44,4 @@ jobs:
       test_folder: './scripts/test/ci_script_test'
       python-versions: '["3.13"]'
       operating-systems: '["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'
+      test_working_directory: './scripts'
