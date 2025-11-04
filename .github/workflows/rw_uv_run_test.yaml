@@ -75,6 +75,11 @@ on:
         type: string
         required: false
         default: '["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'
+      handle-coverage-report:
+        description: "Enable to rename and upload pytest coverage reports."
+        type: boolean
+        required: false
+        default: true
     secrets:
       e2e_test_api_token:
         description: "Set the API token for end-to-end test if it needs."
@@ -106,6 +111,7 @@ jobs:
 
       - name: Install all the project dependencies
         if: ${{ inputs.install_dependency_with_group == '' }}
+        working-directory: ${{ inputs.test_working_directory }}
         run: uv sync --locked --all-extras --dev
 
       - name: Build Python runtime environment by UV with dependency group *${{ inputs.install_dependency_with_group }}*
@@ -147,11 +153,13 @@ jobs:
           E2E_TEST_API_TOKEN: ${{ secrets.e2e_test_api_token }}
 
       - name: Rename the code coverage result file
+        if: ${{ inputs.handle-coverage-report }}
         working-directory: ${{ inputs.test_working_directory }}
         run: |
           mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Upload code coverage result file
+        if: ${{ inputs.handle-coverage-report }}
         uses: actions/upload-artifact@v5
         with:
           name: coverage_${{ inputs.test_type }}_${{ matrix.os }}_${{ matrix.python-version }}
