@@ -16,6 +16,11 @@ dependencies = [
 [project.scripts]
 release-intent = "ci.release_intent:main"
 
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1,<9",
+]
+
 [tool.hatch.build.targets.sdist]
 include = ["ci/"]
 
