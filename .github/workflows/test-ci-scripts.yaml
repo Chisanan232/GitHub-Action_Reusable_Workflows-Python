@@ -38,7 +38,7 @@ on:
 jobs:
   run_script-test:
 #    name: Run all contract test items
-    uses: ./.github/workflows/rw_uv_run_test.yaml@master
+    uses: ./.github/workflows/rw_uv_run_test.yaml
     with:
       test_type: ci-script-test
       test_folder: './scripts/test/ci_script_test'
