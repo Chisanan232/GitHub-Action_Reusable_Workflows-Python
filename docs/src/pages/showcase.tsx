@@ -18,7 +18,7 @@ const PROJECTS: ShowcaseProject[] = [
     description: 'An opinionated starter kit that implements the Abstract Backend Execution pattern end-to-end with queue orchestration, observability, and CI/CD already wired in.',
     website: 'https://github.com/Chisanan232/abstract-backend-implementation-template',
     source: 'https://github.com/Chisanan232/abstract-backend-implementation-template',
-    tags: ['template', 'mcp', 'message-queue', 'poetry'],
+    tags: ['template', 'abstract-backend', 'implementation', 'message-queue', 'uv'],
     isTemplate: true,
   },
   {
@@ -40,7 +40,7 @@ const PROJECTS: ShowcaseProject[] = [
     description: 'Abstract backend framework providing common patterns and utilities for Python backend services.',
     website: 'https://github.com/Chisanan232/abstract-backend',
     source: 'https://github.com/Chisanan232/abstract-backend',
-    tags: ['library', 'framework', 'backend', 'python'],
+    tags: ['library', 'framework', 'abstraction', 'backend', 'python'],
   },
   {
     title: 'ABE Redis',
