@@ -41,7 +41,7 @@ jobs:
     uses: ./.github/workflows/rw_uv_run_test.yaml
     with:
       test_type: ci-script-test
-      test_folder: './scripts/test/ci_script_test'
+      test_folder: './test/ci_script_test'
       python-versions: '["3.13"]'
       operating-systems: '["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'
       test_working_directory: './scripts'
