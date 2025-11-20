@@ -118,7 +118,7 @@ jobs:
         if: ${{ inputs.install_dependency_with_group != '' }}
         working-directory: ${{ inputs.test_working_directory }}
         run: |
-          uv pip install --group=${{ inputs.install_dependency_with_group }}
+          uv sync --locked --all-extras --dev --group=${{ inputs.install_dependency_with_group }}
 
       - name: Run pre-test script
         if: ${{ inputs.pre_test_script != '' }}
