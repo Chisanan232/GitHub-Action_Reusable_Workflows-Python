@@ -63,7 +63,7 @@ jobs:
       has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Check for Dockerfile
         id: check

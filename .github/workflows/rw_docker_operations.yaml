@@ -101,7 +101,7 @@ jobs:
       image_ref: ${{ steps.image_meta.outputs.image_ref }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
           ref: ${{ inputs.checkout-sha != '' && inputs.checkout-sha || (github.event_name == 'push' && github.ref_name == 'master' && github.ref_name || '') }}

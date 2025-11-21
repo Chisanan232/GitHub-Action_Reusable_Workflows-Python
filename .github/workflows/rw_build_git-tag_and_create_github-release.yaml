@@ -72,7 +72,7 @@ jobs:
       matrix_github_action_reusable_workflow: ${{ steps.github_action_reusable_workflow_release.outputs.release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download shell script for checking input parameters
         run: |

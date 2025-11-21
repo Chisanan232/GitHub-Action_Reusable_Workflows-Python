@@ -78,7 +78,7 @@ jobs:
       has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Check for Dockerfile
         id: check
@@ -110,7 +110,7 @@ jobs:
       any_docs_changed: ${{ steps.changes.outputs.docs == 'true' || steps.changes.outputs.dev == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -233,7 +233,7 @@ jobs:
       new_sha: ${{ steps.bump.outputs.new_sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Only use ref for push events to master to get latest commit after version bump
