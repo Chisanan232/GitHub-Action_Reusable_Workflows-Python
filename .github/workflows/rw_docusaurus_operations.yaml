@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
@@ -205,7 +205,7 @@ jobs:
       deploy_url: ${{ steps.preview.outputs.url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
