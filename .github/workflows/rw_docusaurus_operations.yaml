@@ -137,7 +137,7 @@ jobs:
         run: corepack enable
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ inputs.working-directory }}/node_modules
@@ -220,7 +220,7 @@ jobs:
         run: corepack enable
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ inputs.working-directory }}/node_modules
