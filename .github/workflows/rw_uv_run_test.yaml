@@ -160,7 +160,7 @@ jobs:
 
       - name: Upload code coverage result file
         if: ${{ inputs.handle-coverage-report }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage_${{ inputs.test_type }}_${{ matrix.os }}_${{ matrix.python-version }}
           path: ${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}

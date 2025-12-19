@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload build artifacts
         if: inputs.upload-artifacts && contains(fromJSON('["build", "test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.artifact-name }}
           path: dist/
