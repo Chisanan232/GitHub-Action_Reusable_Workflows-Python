@@ -97,6 +97,9 @@ on:
       docs_preview_branch:
         description: 'Documentation preview branch'
         value: ${{ jobs.parse-config.outputs.docs_preview_branch }}
+      docs_check_dir:
+        description: 'Documentation check directory'
+        value: ${{ jobs.parse-config.outputs.docs_check_dir }}
 
 jobs:
   parse-config:
@@ -140,6 +143,7 @@ jobs:
       docs_installation_path: ${{ steps.parse.outputs.docs_installation_path }}
       docs_readme_path: ${{ steps.parse.outputs.docs_readme_path }}
       docs_preview_branch: ${{ steps.parse.outputs.docs_preview_branch }}
+      docs_check_dir: ${{ steps.parse.outputs.docs_check_dir }}
 
     steps:
       - name: Checkout repository
@@ -235,6 +239,7 @@ jobs:
           docs_installation_path=$(get_config ".docs.paths.installation" "docs/INSTALLATION.md")
           docs_readme_path=$(get_config ".docs.paths.readme" "README.md")
           docs_preview_branch=$(get_config ".docs.preview.branch" "docs-preview")
+          docs_check_dir=$(get_config ".docs.check_dir" "docs")
           
           # Set outputs
           echo "do_release=$do_release" >> $GITHUB_OUTPUT
@@ -310,3 +315,4 @@ jobs:
           echo "  - Installation Path: $docs_installation_path"
           echo "  - README Path: $docs_readme_path"
           echo "  - Preview Branch: $docs_preview_branch"
+          echo "  - Check Directory: $docs_check_dir"

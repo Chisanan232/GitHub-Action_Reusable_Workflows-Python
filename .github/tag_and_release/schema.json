@@ -67,6 +67,17 @@
     "notes": {
       "type": "string",
       "description": "Optional human notes for this release"
+    },
+    "docs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "check_dir": {
+          "type": "string",
+          "description": "Directory to check for build validation (relative to build output, default: docs)",
+          "default": "docs"
+        }
+      }
     }
   },
   "required": []

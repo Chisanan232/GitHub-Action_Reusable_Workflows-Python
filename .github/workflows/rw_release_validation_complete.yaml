@@ -138,6 +138,7 @@ jobs:
     with:
       operation: 'test'
       upload-artifacts: true
+      check-dir: ${{ needs.config.outputs.docs_check_dir }}
 
   supply-chain-loopback:
     name: Security Scan (Supply Chain)
