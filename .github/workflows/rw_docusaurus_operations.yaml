@@ -58,6 +58,11 @@ on:
         required: false
         default: true
         type: boolean
+      check-dir:
+        description: 'Directory to check for build validation (relative to build output)'
+        required: false
+        default: 'docs'
+        type: string
 
     outputs:
       build-success:
@@ -279,8 +284,8 @@ jobs:
           fi
           
           # Test that documentation structure is valid
-          if [ ! -d build/docs ]; then
-            echo "❌ Missing docs directory"
+          if [ ! -d build/${{ inputs.check-dir }} ]; then
+            echo "❌ Missing ${{ inputs.check-dir }} directory"
             exit 1
           fi
           
