@@ -115,7 +115,7 @@ jobs:
           fetch-depth: 0
 
       - name: Detect docs section changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         id: changes
         with:
           filters: |
