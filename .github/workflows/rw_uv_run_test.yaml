@@ -30,6 +30,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         required: true
         type: string
+      project_name:
+        description: "Project identifier for monorepo support (used in artifact naming). Leave empty for single-project repos."
+        type: string
+        required: false
+        default: ''
       test_working_directory:
         description: "The working directory for test running."
         required: false
@@ -162,7 +167,7 @@ jobs:
         if: ${{ inputs.handle-coverage-report }}
         uses: actions/upload-artifact@v7
         with:
-          name: coverage_${{ inputs.test_type }}_${{ matrix.os }}_${{ matrix.python-version }}
+          name: ${{ inputs.project_name != '' && format('coverage_{0}_{1}_{2}_{3}', inputs.project_name, inputs.test_type, matrix.os, matrix.python-version) || format('coverage_{0}_{1}_{2}', inputs.test_type, matrix.os, matrix.python-version) }}
           path: ${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
           if-no-files-found: error
           include-hidden-files: true
