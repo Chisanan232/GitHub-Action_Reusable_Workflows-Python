@@ -1,0 +1,86 @@
+name: Extract Package from Tag
+description: |
+  Reusable workflow to extract package name and version from a git tag.
+  Supports both single-project tags (v1.2.3) and monorepo tags (core/v1.2.3).
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Git tag to parse (defaults to GITHUB_REF)'
+        required: false
+        default: ''
+        type: string
+    
+    outputs:
+      package_name:
+        description: 'Extracted package name (empty for single-project)'
+        value: ${{ jobs.extract.outputs.package_name }}
+      version:
+        description: 'Extracted version (without v prefix)'
+        value: ${{ jobs.extract.outputs.version }}
+      is_monorepo_tag:
+        description: 'Whether this is a monorepo tag (contains /)'
+        value: ${{ jobs.extract.outputs.is_monorepo_tag }}
+      raw_tag:
+        description: 'The raw tag that was parsed'
+        value: ${{ jobs.extract.outputs.raw_tag }}
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    outputs:
+      package_name: ${{ steps.parse.outputs.package_name }}
+      version: ${{ steps.parse.outputs.version }}
+      is_monorepo_tag: ${{ steps.parse.outputs.is_monorepo_tag }}
+      raw_tag: ${{ steps.parse.outputs.raw_tag }}
+    
+    steps:
+      - name: Parse tag
+        id: parse
+        run: |
+          # Get tag from input or GITHUB_REF
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          
+          echo "📌 Parsing tag: $TAG"
+          echo "raw_tag=$TAG" >> $GITHUB_OUTPUT
+          
+          # Check if tag contains slash (monorepo format)
+          if [[ "$TAG" == */* ]]; then
+            # Monorepo format: package/vX.Y.Z
+            echo "📦 Detected monorepo tag format"
+            
+            PACKAGE=$(echo "$TAG" | cut -d'/' -f1)
+            VERSION_WITH_V=$(echo "$TAG" | cut -d'/' -f2)
+            VERSION=${VERSION_WITH_V#v}  # Remove 'v' prefix if present
+            
+            echo "is_monorepo_tag=true" >> $GITHUB_OUTPUT
+            echo "package_name=$PACKAGE" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            
+            echo "✅ Extracted:"
+            echo "   Package: $PACKAGE"
+            echo "   Version: $VERSION"
+            
+          else
+            # Single-project format: vX.Y.Z
+            echo "📋 Detected single-project tag format"
+            
+            VERSION=${TAG#v}  # Remove 'v' prefix if present
+            
+            echo "is_monorepo_tag=false" >> $GITHUB_OUTPUT
+            echo "package_name=" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            
+            echo "✅ Extracted:"
+            echo "   Version: $VERSION"
+          fi
+          
+          # Validate version format (basic semver check)
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "⚠️ Warning: Version '$VERSION' does not match semver format (X.Y.Z)"
+          fi

@@ -73,10 +73,56 @@ jobs:
 | `build_context` | Docker build context directory | `./services/api` |
 | `tag_prefix` | Git tag prefix for releases | `core/` → `core/v1.2.3` |
 
-📚 **Complete Documentation**: See [`.ai/prompt/2026.4.4/`](.ai/prompt/2026.4.4/) for detailed guides:
+### Configuration Options
+
+**🎯 Option 1: Direct Parameters** (Recommended for testing/building)
+- Pass parameters directly to each workflow
+- Explicit and clear per-package configuration
+- Best for test and build workflows
+
+**📝 Option 2: Intent.yaml Configuration** (Recommended for releases)
+- Centralized configuration in `.github/tag_and_release/intent.yaml`
+- Define multiple packages with shared defaults
+- Package-specific overrides supported
+- Ideal for release workflows with complex settings
+
+**Example monorepo intent.yaml**:
+```yaml
+packages:
+  - name: core
+    working_directory: ./packages/core
+    tag_prefix: core/
+    python:
+      auth_method: oidc
+  
+  - name: utils
+    working_directory: ./packages/utils
+    tag_prefix: utils/
+
+defaults:
+  git:
+    commit:
+      name: "GitHub Actions Bot"
+  python:
+    auth_method: token
+```
+
+**Using in release workflows**:
+```yaml
+jobs:
+  release-core:
+    uses: ./.github/workflows/rw_release_complete.yaml
+    with:
+      package-name: core  # Loads config from intent.yaml
+```
+
+📚 **Complete Documentation**: See [`.ai/prompt/2026.4.4/`](.ai/prompt/2026.4.4/) and [`.ai/prompt/2026.4.5/`](.ai/prompt/2026.4.5/) for detailed guides:
 - `monorepo-usage-guide.md` - Comprehensive usage examples
 - `migration-guide-single-to-monorepo.md` - Migration from single-project
 - `phase-3-release-docker-guide.md` - Release & Docker examples
+- `intent-yaml-monorepo-analysis.md` - Intent.yaml monorepo support analysis
+- `project-property-function-analysis.md` - Project configuration deep dive
+- `monorepo-intent-yaml-support-plan.md` - Implementation planning
 
 ## Workflow template usages
 

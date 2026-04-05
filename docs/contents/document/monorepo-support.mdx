@@ -147,7 +147,86 @@ jobs:
       upload-artifacts: true
 ```
 
-### Example 2: Independent Package Releases
+### Example 2: Centralized Configuration with Intent.yaml
+
+**NEW**: Use `.github/tag_and_release/intent.yaml` for centralized monorepo configuration!
+
+#### Intent.yaml Configuration
+
+```yaml
+# .github/tag_and_release/intent.yaml
+packages:
+  - name: core
+    working_directory: ./packages/core
+    tag_prefix: core/
+    python:
+      auth_method: oidc
+    docker:
+      registries:
+        dockerhub: docker.io
+        ghcr: ghcr.io
+  
+  - name: utils
+    working_directory: ./packages/utils
+    tag_prefix: utils/
+    python:
+      auth_method: token  # Override default
+
+  - name: api
+    working_directory: ./services/api
+    tag_prefix: api/
+    # Uses all defaults
+
+defaults:
+  git:
+    commit:
+      name: "GitHub Actions Bot"
+      email: "actions@github.com"
+  python:
+    auth_method: oidc
+  docker:
+    registries:
+      dockerhub: docker.io
+      ghcr: ghcr.io
+    health_check:
+      port: 8000
+      path: "/health"
+```
+
+#### Release Workflow Using Intent.yaml
+
+```yaml
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'core/v*.*.*'
+      - 'utils/v*.*.*'
+      - 'api/v*.*.*'
+
+jobs:
+  # Extract package name from tag
+  parse-tag:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_extract_package_from_tag.yaml@master
+  
+  # Release with intent.yaml configuration
+  release:
+    needs: parse-tag
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ needs.parse-tag.outputs.package_name }}  # Loads from intent.yaml
+    secrets: inherit
+```
+
+**Benefits of Intent.yaml**:
+- ✅ Centralized configuration - single source of truth
+- ✅ Shared defaults across packages
+- ✅ Per-package overrides for flexibility
+- ✅ Validated by JSON schema
+- ✅ No workflow duplication
+
+### Example 3: Independent Package Releases (Direct Parameters)
 
 ```yaml
 name: Release Package
