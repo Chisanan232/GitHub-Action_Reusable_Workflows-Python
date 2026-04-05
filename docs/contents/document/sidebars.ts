@@ -56,6 +56,23 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: '🎉 Monorepo Support',
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'monorepo-support',
+          label: '📖 Monorepo Guide',
+        },
+        {
+          type: 'doc',
+          id: 'monorepo-quick-reference',
+          label: '⚡ Quick Reference',
+        },
+      ],
+    },
+    {
+      type: 'category',
       label: '🔧 Reusable Workflows',
       collapsed: false,
       items: [
