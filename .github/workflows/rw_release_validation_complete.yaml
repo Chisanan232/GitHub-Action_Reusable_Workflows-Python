@@ -5,6 +5,11 @@ name: Complete Release Validation Process
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package to validate (for monorepo). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
       level:
         description: 'Release level to test (auto, patch, minor, major)'
         required: false
@@ -55,6 +60,8 @@ jobs:
   config:
     name: Parse Configuration
     uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
 
   check-dockerfile:
     name: Check Dockerfile Exists

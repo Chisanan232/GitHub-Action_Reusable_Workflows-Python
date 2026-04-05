@@ -5,6 +5,11 @@ name: Complete Release Process
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package to release (for monorepo). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
       level:
         description: 'Release level (auto, patch, minor, major)'
         required: false
@@ -70,6 +75,8 @@ jobs:
   config:
     name: Parse Configuration
     uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
 
   check-dockerfile:
     name: Check Dockerfile Exists
@@ -251,6 +258,12 @@ jobs:
       - name: Bump version with uv
         id: bump
         run: |
+          # Change to package working directory if specified
+          if [[ -n "${{ needs.config.outputs.working_directory }}" && "${{ needs.config.outputs.working_directory }}" != "./" ]]; then
+            echo "📁 Changing to package directory: ${{ needs.config.outputs.working_directory }}"
+            cd "${{ needs.config.outputs.working_directory }}"
+          fi
+          
           case "${{ needs.intent.outputs.level }}" in
             "patch")
               BUMP_FLAG="--bump patch"
@@ -272,6 +285,11 @@ jobs:
           # Update lock file to sync with new version
           echo "Updating uv.lock file to sync with new version"
           uv lock
+          
+          # Return to repository root if we changed directory
+          if [[ -n "${{ needs.config.outputs.working_directory }}" && "${{ needs.config.outputs.working_directory }}" != "./" ]]; then
+            cd "$GITHUB_WORKSPACE"
+          fi
           
           # Get the new version
           NEW_VERSION=$(uv version --short)

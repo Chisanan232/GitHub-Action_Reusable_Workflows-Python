@@ -5,6 +5,11 @@ name: Complete Staging Release Process
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package to release (for monorepo). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
       level:
         description: 'Release level for staging (patch, minor, major)'
         required: false
@@ -44,6 +49,8 @@ jobs:
   config:
     name: Parse Configuration
     uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
 
   check-dockerfile:
     name: Check Dockerfile Exists
