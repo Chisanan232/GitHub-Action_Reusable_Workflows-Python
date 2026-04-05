@@ -13,6 +13,16 @@ on:
         required: false
         default: '3.13'
         type: string
+      package_working_directory:
+        description: 'Working directory containing the package to build (where pyproject.toml is located)'
+        required: false
+        default: './'
+        type: string
+      project_name:
+        description: 'Project identifier for monorepo (used in artifact naming). Leave empty for single-project repos.'
+        required: false
+        default: ''
+        type: string
       version:
         description: 'Package version (for display purposes)'
         required: false
@@ -76,16 +86,19 @@ jobs:
 
       - name: Get package version
         id: version
+        working-directory: ${{ inputs.package_working_directory }}
         run: |
           VERSION=$(uv version --short)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Package version: $VERSION"
+          echo "📁 Working directory: ${{ inputs.package_working_directory }}"
 
       - name: Build package
         if: contains(fromJSON('["build", "test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
         id: build
+        working-directory: ${{ inputs.package_working_directory }}
         run: |
-          echo "🔨 Building Python package..."
+          echo "🔨 Building Python package in ${{ inputs.package_working_directory }}..."
           if [ "${{ inputs.version }}" != "" ]; then
             echo "Target version: ${{ inputs.version }}"
           fi
@@ -101,6 +114,7 @@ jobs:
 
       - name: Test package integrity
         if: contains(fromJSON('["test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
+        working-directory: ${{ inputs.package_working_directory }}
         run: |
           echo "🔍 Testing package integrity..."
           
@@ -125,8 +139,8 @@ jobs:
         if: inputs.upload-artifacts && contains(fromJSON('["build", "test", "publish-pypi", "publish-testpypi"]'), inputs.operation)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.artifact-name }}
-          path: dist/
+          name: ${{ inputs.project_name != '' && format('{0}-{1}', inputs.project_name, inputs.artifact-name) || inputs.artifact-name }}
+          path: ${{ inputs.package_working_directory }}dist/
           retention-days: 30
 
       - name: Publish to PyPI using OIDC Authentication
@@ -135,15 +149,17 @@ jobs:
         with:
           print-hash: true
           verify-metadata: true
-          packages-dir: dist/
+          packages-dir: ${{ inputs.package_working_directory }}dist/
           repository-url: ${{ inputs.operation == 'publish-testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
       - name: Publish to PyPI using Token Authentication
         if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'token'
+        working-directory: ${{ inputs.package_working_directory }}
         env:
           UV_PUBLISH_TOKEN: ${{ inputs.operation == 'publish-pypi' && secrets.PYPI_API_TOKEN || secrets.TEST_PYPI_API_TOKEN }}
         run: |
           echo "🔑 Using PyPI token authentication with UV..."
+          echo "📁 Publishing from: ${{ inputs.package_working_directory }}"
           
           # Verify token is available
           if [ -z "$UV_PUBLISH_TOKEN" ]; then
