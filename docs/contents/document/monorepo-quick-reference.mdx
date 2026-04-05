@@ -1,0 +1,209 @@
+# Monorepo Quick Reference
+
+Quick reference guide for using reusable workflows in a Python monorepo.
+
+## Essential Parameters
+
+### Testing Workflows
+
+```yaml
+# UV Testing
+rw_uv_run_test.yaml:
+  project_name: "core"                    # Package identifier
+  test_working_directory: "./packages/core"
+
+# Poetry Testing  
+rw_poetry_run_test.yaml:
+  project_name: "core"
+  test_working_directory: "./packages/core"
+
+# pip Testing
+rw_run_test.yaml:
+  project_name: "core"
+  test_working_directory: "./packages/core"
+  requirements_path: "./requirements.txt"
+  requirements_test_path: "./requirements-test.txt"
+```
+
+### Building & Publishing
+
+```yaml
+# Build Package
+rw_python_package.yaml:
+  project_name: "core"
+  package_working_directory: "./packages/core"
+
+# Publish to PyPI
+rw_push_pypi.yaml:
+  package_working_directory: "./packages/core"
+```
+
+### Coverage & Quality
+
+```yaml
+# Organize Coverage
+rw_organize_test_cov_reports.yaml:
+  project_name: "core"
+  test_type: "unit-test"
+
+# Upload Coverage
+rw_upload_test_cov_report.yaml:
+  project_name: "core"
+
+# SonarQube Scan
+rw_sonarqube_scan.yaml:
+  project_name: "core"
+  project_working_directory: "./packages/core"
+  sonar_project_key: "myorg_monorepo_core"
+```
+
+### Release & Deployment
+
+```yaml
+# Git Tag & Release
+rw_build_git-tag_and_create_github-release.yaml:
+  project_name: "core"
+  package_working_directory: "./packages/core"
+  tag_prefix: "core/"
+
+# Docker Build
+rw_docker_operations.yaml:
+  build_context: "./packages/core"
+  dockerfile_path: "Dockerfile"
+  project_name: "core"
+
+# Documentation
+rw_documentation_deployment.yaml:
+  docs_working_directory: "./packages/core"
+  project_name: "core"
+```
+
+## Common Patterns
+
+### Pattern 1: Test Multiple Packages
+
+```yaml
+jobs:
+  test:
+    strategy:
+      matrix:
+        package: [core, utils, api]
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      project_name: ${{ matrix.package }}
+      test_working_directory: ./packages/${{ matrix.package }}
+      test_type: unit-test
+      all_test_items_paths: '["./tests"]'
+```
+
+### Pattern 2: Path-Based Triggers
+
+```yaml
+on:
+  push:
+    paths:
+      - 'packages/core/**'
+      - '.github/workflows/ci-core.yaml'
+
+jobs:
+  test-core:
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      project_name: core
+      test_working_directory: ./packages/core
+```
+
+### Pattern 3: Tag-Based Releases
+
+```yaml
+on:
+  push:
+    tags:
+      - 'core/v*'
+      - 'utils/v*'
+
+jobs:
+  parse-tag:
+    # Parse tag to extract package and version
+    
+  release:
+    needs: parse-tag
+    uses: ./.github/workflows/rw_build_git-tag_and_create_github-release.yaml
+    with:
+      project_name: ${{ needs.parse-tag.outputs.package }}
+      package_working_directory: ./packages/${{ needs.parse-tag.outputs.package }}
+      tag_prefix: ${{ needs.parse-tag.outputs.package }}/
+```
+
+## Artifact Naming
+
+| Workflow | Single-Project | Monorepo |
+|----------|---------------|----------|
+| Coverage | `coverage_unit-test_*` | `coverage_core_unit-test_*` |
+| Organized | `unit-test_coverage_data_file` | `core_unit-test_coverage_data_file` |
+| Security Scan | `security-scan-ghcr.io-1.2.3` | `security-scan-core-ghcr.io-1.2.3` |
+
+## Git Tags
+
+| Type | Format | Example |
+|------|--------|---------|
+| Single-Project | `v{version}` | `v1.2.3` |
+| Monorepo | `{package}/v{version}` | `core/v1.2.3` |
+
+## Checklist: Converting to Monorepo
+
+- [ ] Add `project_name` to all testing workflows
+- [ ] Add `test_working_directory` to testing workflows
+- [ ] Add `package_working_directory` to build workflows
+- [ ] Update artifact downloads to use `project_name`
+- [ ] Configure tag prefix for releases
+- [ ] Update paths in workflow triggers
+- [ ] Test artifact naming (no collisions)
+- [ ] Update documentation
+
+## Common Mistakes
+
+### ❌ Wrong: Missing project_name
+```yaml
+test:
+  with:
+    test_working_directory: ./packages/core
+    # Missing project_name - artifacts will collide!
+```
+
+### ✅ Correct: Include project_name
+```yaml
+test:
+  with:
+    project_name: core
+    test_working_directory: ./packages/core
+```
+
+### ❌ Wrong: Inconsistent naming
+```yaml
+test:
+  with:
+    project_name: core
+
+coverage:
+  with:
+    project_name: package-core  # Different name!
+```
+
+### ✅ Correct: Consistent naming
+```yaml
+test:
+  with:
+    project_name: core
+
+coverage:
+  with:
+    project_name: core  # Same name
+```
+
+## Need More Help?
+
+- **Full Guide**: [Monorepo Support](./monorepo-support.mdx)
+- **Planning Document**: `.ai/prompt/2026.4.4/monorepo-support-planning.md`
+- **Usage Examples**: `.ai/prompt/2026.4.4/monorepo-usage-guide.md`
+- **Migration Guide**: `.ai/prompt/2026.4.4/migration-guide-single-to-monorepo.md`

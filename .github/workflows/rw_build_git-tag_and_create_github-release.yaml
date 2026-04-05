@@ -34,6 +34,16 @@ on:
 #        type: string
 #        required: false
 #        default: push
+      package_working_directory:
+        description: "Working directory containing the package (for monorepo). Used to find version info."
+        type: string
+        required: false
+        default: './'
+      tag_prefix:
+        description: "Prefix for git tags in monorepo (e.g., 'core/' for tag 'core/v1.2.3'). Leave empty for single-project."
+        type: string
+        required: false
+        default: ''
       debug_mode:
         description: "It would run the tasks as log message, doesn't essentially run feature if this option is true."
         type: boolean
@@ -73,9 +83,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Need full history for tagging
 
       - name: Download shell script for checking input parameters
+        working-directory: ${{ inputs.package_working_directory }}
         run: |
+          mkdir -p ./scripts/ci/
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/build_git-tag_or_create_github-release.sh --output ./scripts/ci/build_git-tag_or_create_github-release.sh
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/generate_release_info.sh --output ./scripts/ci/generate_release_info.sh
 
@@ -83,7 +97,14 @@ jobs:
       - name: Build git tag and create GitHub release for Python project
         if: ${{ inputs.project_type == 'python-package' }}
         id: python_release
+        working-directory: ${{ inputs.package_working_directory }}
         run: | 
+          echo "📁 Working directory: ${{ inputs.package_working_directory }}"
+          echo "🏷️  Tag prefix: ${{ inputs.tag_prefix }}"
+          
+          # Set tag prefix as environment variable for scripts
+          export TAG_PREFIX="${{ inputs.tag_prefix }}"
+          
           release=$(bash ./scripts/ci/build_git-tag_or_create_github-release.sh ${{ inputs.project_type }}  ${{ inputs.debug_mode }} ${{ inputs.project_name }} ${{ inputs.software_version_format }})
           echo "📄 Release log: $release"
 
@@ -98,7 +119,14 @@ jobs:
       - name: Build git tag and create GitHub release for GitHub Action reusable workflow project
         if: ${{ inputs.project_type == 'github-action-reusable-workflow' }}
         id: github_action_reusable_workflow_release
+        working-directory: ${{ inputs.package_working_directory }}
         run: | 
+          echo "📁 Working directory: ${{ inputs.package_working_directory }}"
+          echo "🏷️  Tag prefix: ${{ inputs.tag_prefix }}"
+          
+          # Set tag prefix as environment variable for scripts
+          export TAG_PREFIX="${{ inputs.tag_prefix }}"
+          
           release_info=$(bash ./scripts/ci/generate_release_info.sh ${{ inputs.project_type }} ${{ inputs.debug_mode }})
           echo "🧾 release_info: $release_info"
           release_version=$(echo "$release_info" | grep -E "Target version which would be pass to deployment process: (([0-9]{1,}\.{0,1}[0-9]{0,}\.{0,1}[0-9]{0,})|(Pre\-Release))" | grep -E -o "(([0-9]{1,}\.{0,1}[0-9]{0,}\.{0,1}[0-9]{0,})|(Pre\-Release))")

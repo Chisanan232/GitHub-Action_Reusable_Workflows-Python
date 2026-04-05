@@ -26,6 +26,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         type: string
         required: true
+      project_name:
+        description: "Project identifier for monorepo (filters coverage artifacts by project). Leave empty for single-project repos."
+        type: string
+        required: false
+        default: ''
       run_with_python_version:
         description: "The Python version you want to use in this workflow."
         type: string
@@ -48,7 +53,7 @@ jobs:
       - name: Download code coverage result file
         uses: actions/download-artifact@v8
         with:
-          pattern: coverage*
+          pattern: ${{ inputs.project_name != '' && format('coverage_{0}*', inputs.project_name) || 'coverage*' }}
           path: ${{ inputs.test_working_directory }}
           merge-multiple: true
 
@@ -77,7 +82,7 @@ jobs:
       - name: Upload testing coverage report (.coverage)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.test_type }}_coverage_data_file
+          name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_data_file', inputs.project_name, inputs.test_type) || format('{0}_coverage_data_file', inputs.test_type) }}
           path: ${{ inputs.test_working_directory }}.coverage
           if-no-files-found: error
           include-hidden-files: true
@@ -85,7 +90,7 @@ jobs:
       - name: Upload testing coverage report (.xml)
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.test_type }}_coverage_xml_report
+          name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
           path: ${{ inputs.test_working_directory }}coverage**xml
           if-no-files-found: error
           include-hidden-files: true

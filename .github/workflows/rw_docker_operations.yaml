@@ -8,6 +8,21 @@ on:
         description: 'Operation to perform: build, test, push, security-scan'
         required: true
         type: string
+      build_context:
+        description: 'Build context directory (for monorepo, specify package directory)'
+        required: false
+        default: '.'
+        type: string
+      dockerfile_path:
+        description: 'Path to Dockerfile relative to build context'
+        required: false
+        default: 'Dockerfile'
+        type: string
+      project_name:
+        description: 'Project identifier for monorepo (used in artifact naming). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
       image-name:
         description: 'Docker image name (without registry)'
         required: false
@@ -156,7 +171,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: ${{ inputs.build_context }}
+          file: ${{ inputs.build_context }}/${{ inputs.dockerfile_path }}
           push: ${{ inputs.operation == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -388,7 +404,7 @@ jobs:
         if: inputs.operation == 'security-scan'
         uses: actions/upload-artifact@v7
         with:
-          name: security-scan-${{ inputs.registry }}-${{ inputs.version }}
+          name: ${{ inputs.project_name != '' && format('security-scan-{0}-{1}-{2}', inputs.project_name, inputs.registry, inputs.version) || format('security-scan-{0}-{1}', inputs.registry, inputs.version) }}
           path: |
             sbom*.spdx.json
             grype-*.json
@@ -399,7 +415,7 @@ jobs:
         if: inputs.enable-sbom && inputs.operation != 'security-scan'
         uses: actions/upload-artifact@v7
         with:
-          name: docker-sbom-${{ inputs.registry }}-${{ inputs.version }}
+          name: ${{ inputs.project_name != '' && format('docker-sbom-{0}-{1}-{2}', inputs.project_name, inputs.registry, inputs.version) || format('docker-sbom-{0}-{1}', inputs.registry, inputs.version) }}
           path: sbom.spdx.json
           retention-days: 30
 
@@ -429,6 +445,8 @@ jobs:
           echo "- **Operation**: ${{ inputs.operation }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Image**: ${{ steps.initial-docker-tag-meta.outputs.image_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Context**: ${{ inputs.build_context }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: ${{ inputs.dockerfile_path }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Platforms**: ${{ inputs.platforms }}" >> $GITHUB_STEP_SUMMARY
           echo "- **SBOM**: ${{ inputs.enable-sbom && '✅ Generated' || (inputs.operation == 'security-scan' && '✅ Generated (Security Scan)') || '❌ Disabled' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Signing**: ${{ inputs.enable-signing && '✅ Enabled' || '❌ Disabled' }}" >> $GITHUB_STEP_SUMMARY
