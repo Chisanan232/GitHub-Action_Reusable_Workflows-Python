@@ -116,6 +116,28 @@ jobs:
       package-name: core  # Loads config from intent.yaml
 ```
 
+### 🏷️ Tag-Triggered Releases
+
+Release packages automatically when you push version tags:
+
+**Single Project**:
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+# Triggers automatic release
+```
+
+**Monorepo** (package-specific):
+```bash
+git tag core/v1.2.3
+git push origin core/v1.2.3
+# Triggers release of 'core' package only
+```
+
+**Example Workflows**:
+- See [`.github/workflows/examples/example-release-on-tag.yaml`](.github/workflows/examples/example-release-on-tag.yaml) for single-project
+- See [`.github/workflows/examples/example-monorepo-release-on-tag.yaml`](.github/workflows/examples/example-monorepo-release-on-tag.yaml) for monorepo
+
 📚 **Complete Documentation**: See [`.ai/prompt/2026.4.4/`](.ai/prompt/2026.4.4/) and [`.ai/prompt/2026.4.5/`](.ai/prompt/2026.4.5/) for detailed guides:
 - `monorepo-usage-guide.md` - Comprehensive usage examples
 - `migration-guide-single-to-monorepo.md` - Migration from single-project

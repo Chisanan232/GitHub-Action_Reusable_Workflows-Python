@@ -2,6 +2,46 @@
 
 Quick reference guide for using reusable workflows in a Python monorepo.
 
+## Tag Naming Conventions 🏷️
+
+### Single-Project Tags
+```bash
+v1.2.3
+v2.0.0
+```
+
+### Monorepo Package Tags
+```bash
+{package-name}/v{version}
+
+# Examples:
+core/v1.2.3
+utils/v2.0.0
+api/v0.1.5
+```
+
+### Tag-Triggered Releases
+
+**Single Project**:
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+# Triggers automatic release
+```
+
+**Monorepo Package**:
+```bash
+git tag core/v1.2.3
+git push origin core/v1.2.3
+# Triggers release of 'core' package only
+```
+
+**Workflow Setup**:
+- See `.github/workflows/examples/example-release-on-tag.yaml` for single-project
+- See `.github/workflows/examples/example-monorepo-release-on-tag.yaml` for monorepo
+
+---
+
 ## Essential Parameters
 
 ### Testing Workflows
