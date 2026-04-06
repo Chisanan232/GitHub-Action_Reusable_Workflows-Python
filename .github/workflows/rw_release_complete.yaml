@@ -81,6 +81,8 @@ jobs:
   check-dockerfile:
     name: Check Dockerfile Exists
     runs-on: ubuntu-latest
+    needs: [config]
+    if: always()
     outputs:
       has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
     steps:
@@ -89,12 +91,19 @@ jobs:
 
       - name: Check for Dockerfile
         id: check
+        env:
+          WORK_DIR: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || './' }}
         run: |
-          if [ -f "Dockerfile" ]; then
-            echo "✅ Dockerfile found"
+          # Check for Dockerfile in package directory if monorepo, otherwise root
+          DOCKERFILE_PATH="${WORK_DIR}/Dockerfile"
+          
+          echo "📁 Checking for Dockerfile at: $DOCKERFILE_PATH"
+          
+          if [ -f "$DOCKERFILE_PATH" ]; then
+            echo "✅ Dockerfile found at $DOCKERFILE_PATH"
             echo "has_dockerfile=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ No Dockerfile found - Docker processes will be skipped"
+            echo "⚠️ No Dockerfile found at $DOCKERFILE_PATH - Docker processes will be skipped"
             echo "has_dockerfile=false" >> $GITHUB_OUTPUT
           fi
 
@@ -102,6 +111,7 @@ jobs:
     uses: ./.github/workflows/rw_parse_release_intent.yaml
     needs: config
     with:
+      package-name: ${{ inputs.package-name }}
       level: ${{ inputs.level || needs.config.outputs.level }}
       python: ${{ inputs.python || needs.config.outputs.python }}
       docker: ${{ inputs.docker || needs.config.outputs.docker }}
@@ -391,6 +401,7 @@ jobs:
     uses: ./.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml
     needs: [config, bump_version]
     with:
+      package-name: ${{ inputs.package-name }}
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
       debug_mode: false
@@ -403,6 +414,8 @@ jobs:
     if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.python != 'skip'
     with:
       operation: 'publish-pypi'
+      package_working_directory: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
       artifact-name: 'python-package-production'
@@ -421,6 +434,8 @@ jobs:
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       operation: 'push'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
@@ -435,6 +450,8 @@ jobs:
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true' && needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
     with:
       operation: 'push'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_ghcr }}
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
@@ -447,6 +464,7 @@ jobs:
     needs: [config, intent, prepare_docs_matrix, bump_version, build_git-tag_and_create_github-release]
     if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docs != 'skip' && needs.prepare_docs_matrix.outputs.has_sections == 'true'
     with:
+      package-name: ${{ inputs.package-name }}
       operation: 'version'
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
