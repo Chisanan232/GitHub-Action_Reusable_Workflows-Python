@@ -25,6 +25,11 @@ name: Build git tag and create GitHub release with software version
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: "Package name for monorepo (loads configuration from intent.yaml)"
+        required: false
+        default: ''
+        type: string
       project_type:
         description: "Different project type would get the software version info in different way."
         required: true
@@ -73,9 +78,18 @@ on:
 
 
 jobs:
+  # Load package configuration from intent.yaml if package-name is provided
+  config:
+    name: Load Package Configuration
+    if: ${{ inputs.package-name != '' }}
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
+
   build_git-tag_and_create_github-release:
 #    name: Build git tag and GitHub release if it needs
-    if: github.event_name == 'push'
+    needs: [config]
+    if: always() && github.event_name == 'push'  # Run even if config job is skipped
     runs-on: ubuntu-latest
     outputs:
       matrix_python: ${{ steps.python_release.outputs.release_type }}
@@ -87,7 +101,7 @@ jobs:
           fetch-depth: 0  # Need full history for tagging
 
       - name: Download shell script for checking input parameters
-        working-directory: ${{ inputs.package_working_directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.package_working_directory }}
         run: |
           mkdir -p ./scripts/ci/
           curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/build_git-tag_or_create_github-release.sh --output ./scripts/ci/build_git-tag_or_create_github-release.sh
@@ -97,7 +111,7 @@ jobs:
       - name: Build git tag and create GitHub release for Python project
         if: ${{ inputs.project_type == 'python-package' }}
         id: python_release
-        working-directory: ${{ inputs.package_working_directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.package_working_directory }}
         run: | 
           echo "📁 Working directory: ${{ inputs.package_working_directory }}"
           echo "🏷️  Tag prefix: ${{ inputs.tag_prefix }}"
