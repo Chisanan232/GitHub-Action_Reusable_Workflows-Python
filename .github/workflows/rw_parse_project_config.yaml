@@ -11,6 +11,11 @@ on:
         required: false
         default: '.github/tag_and_release/intent.yaml'
         type: string
+      package-name:
+        description: 'Package name to parse (for monorepo mode). If not provided, uses single-project mode or returns all packages.'
+        required: false
+        default: ''
+        type: string
       
     outputs:
       # Release Control
@@ -45,6 +50,23 @@ on:
       base_branch:
         description: 'Base/main branch name'
         value: ${{ jobs.parse-config.outputs.base_branch }}
+      working_directory:
+        description: 'Package working directory (for monorepo)'
+        value: ${{ jobs.parse-config.outputs.working_directory }}
+      tag_prefix:
+        description: 'Git tag prefix (for monorepo)'
+        value: ${{ jobs.parse-config.outputs.tag_prefix }}
+      
+      # Monorepo Configuration
+      is_monorepo:
+        description: 'Whether this is a monorepo configuration'
+        value: ${{ jobs.parse-config.outputs.is_monorepo }}
+      packages_json:
+        description: 'JSON array of all packages (for monorepo without package selection)'
+        value: ${{ jobs.parse-config.outputs.packages_json }}
+      packages_count:
+        description: 'Number of packages in monorepo'
+        value: ${{ jobs.parse-config.outputs.packages_count }}
       
       # Git Configuration
       git_commit_name:
@@ -119,6 +141,13 @@ jobs:
       project_name: ${{ steps.parse.outputs.project_name }}
       package_name: ${{ steps.parse.outputs.package_name }}
       base_branch: ${{ steps.parse.outputs.base_branch }}
+      working_directory: ${{ steps.parse.outputs.working_directory }}
+      tag_prefix: ${{ steps.parse.outputs.tag_prefix }}
+      
+      # Monorepo Configuration
+      is_monorepo: ${{ steps.parse.outputs.is_monorepo }}
+      packages_json: ${{ steps.parse.outputs.packages_json }}
+      packages_count: ${{ steps.parse.outputs.packages_count }}
       
       # Python Package Configuration
       python_auth_method: ${{ steps.parse.outputs.python_auth_method }}
@@ -198,10 +227,108 @@ jobs:
           docker=$(get_config ".artifacts.docker" "auto")
           docs=$(get_config ".artifacts.docs.mode // .artifacts.docs" "auto")
           
-          # Parse Project Configuration
-          project_name=$(get_config ".project.name" "${{ github.event.repository.name }}")
-          package_name=$(get_config ".project.package_name" "${{ github.event.repository.name }}")
-          base_branch=$(get_config ".project.base_branch" "master")
+          # Detect configuration mode (single-project vs monorepo)
+          if [[ "$use_defaults" == "true" ]]; then
+            MODE="single-project"
+            echo "📋 Using default single-project mode (no config file)"
+          else
+            packages_check=$(yq eval '.packages' "$config_file" 2>/dev/null || echo "null")
+            if [[ "$packages_check" != "null" ]]; then
+              MODE="monorepo"
+              echo "📦 Detected monorepo configuration"
+            else
+              MODE="single-project"
+              echo "📋 Detected single-project configuration"
+            fi
+          fi
+          
+          # Parse based on mode
+          if [[ "$MODE" == "single-project" ]]; then
+            # Single-project mode (existing logic)
+            project_name=$(get_config ".project.name" "${{ github.event.repository.name }}")
+            package_name=$(get_config ".project.package_name" "${{ github.event.repository.name }}")
+            base_branch=$(get_config ".project.base_branch" "master")
+            working_directory="./"
+            tag_prefix=""
+            is_monorepo="false"
+            packages_json="[]"
+            packages_count="0"
+            
+            if [[ -n "${{ inputs.package-name }}" ]]; then
+              echo "⚠️ Warning: package-name input ignored for single-project configuration"
+            fi
+            
+          elif [[ "$MODE" == "monorepo" && -n "${{ inputs.package-name }}" ]]; then
+            # Monorepo mode - specific package
+            echo "🎯 Parsing configuration for package: ${{ inputs.package-name }}"
+            
+            # Find package index
+            PACKAGE_INDEX=$(yq eval ".packages | to_entries | .[] | select(.value.name == \"${{ inputs.package-name }}\") | .key" "$config_file" 2>/dev/null)
+            
+            if [[ -z "$PACKAGE_INDEX" ]]; then
+              echo "❌ Error: Package '${{ inputs.package-name }}' not found in configuration"
+              available=$(yq eval '.packages[].name' "$config_file" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+              echo "Available packages: $available"
+              exit 1
+            fi
+            
+            # Extract package-specific values
+            project_name=$(yq eval ".packages[$PACKAGE_INDEX].name" "$config_file")
+            package_name=$(yq eval ".packages[$PACKAGE_INDEX].package_name // .packages[$PACKAGE_INDEX].name" "$config_file")
+            working_directory=$(yq eval ".packages[$PACKAGE_INDEX].working_directory" "$config_file")
+            base_branch=$(yq eval ".packages[$PACKAGE_INDEX].base_branch // .defaults.git.base_branch // \"master\"" "$config_file")
+            tag_prefix=$(yq eval ".packages[$PACKAGE_INDEX].tag_prefix // (\"${project_name}/\")" "$config_file")
+            
+            # Get package-specific overrides or fall back to defaults (Option A: Replace strategy)
+            python_auth_method=$(yq eval ".packages[$PACKAGE_INDEX].python.auth_method // .defaults.python.auth_method // \"oidc\"" "$config_file")
+            
+            git_commit_name=$(yq eval ".packages[$PACKAGE_INDEX].git.commit.name // .defaults.git.commit.name // \"GitHub Actions Bot\"" "$config_file")
+            git_commit_email=$(yq eval ".packages[$PACKAGE_INDEX].git.commit.email // .defaults.git.commit.email // \"actions@github.com\"" "$config_file")
+            
+            docker_registry_dockerhub=$(yq eval ".packages[$PACKAGE_INDEX].docker.registries.dockerhub // .defaults.docker.registries.dockerhub // \"docker.io\"" "$config_file")
+            docker_registry_ghcr=$(yq eval ".packages[$PACKAGE_INDEX].docker.registries.ghcr // .defaults.docker.registries.ghcr // \"ghcr.io\"" "$config_file")
+            docker_health_check_port=$(yq eval ".packages[$PACKAGE_INDEX].docker.health_check.port // .defaults.docker.health_check.port // \"8000\"" "$config_file")
+            docker_health_check_path=$(yq eval ".packages[$PACKAGE_INDEX].docker.health_check.path // .defaults.docker.health_check.path // \"/health\"" "$config_file")
+            docker_run_options=$(yq eval ".packages[$PACKAGE_INDEX].docker.run_options // .defaults.docker.run_options // \"-e API_TOKEN=test_token\"" "$config_file")
+            
+            docs_ci_cd_path=$(yq eval ".packages[$PACKAGE_INDEX].docs.paths.ci_cd // .defaults.docs.paths.ci_cd // \"docs/CI_CD.md\"" "$config_file")
+            docs_installation_path=$(yq eval ".packages[$PACKAGE_INDEX].docs.paths.installation // .defaults.docs.paths.installation // \"docs/INSTALLATION.md\"" "$config_file")
+            docs_readme_path=$(yq eval ".packages[$PACKAGE_INDEX].docs.paths.readme // .defaults.docs.paths.readme // \"README.md\"" "$config_file")
+            docs_preview_branch=$(yq eval ".packages[$PACKAGE_INDEX].docs.preview.branch // .defaults.docs.preview.branch // \"docs-preview\"" "$config_file")
+            docs_check_dir=$(yq eval ".packages[$PACKAGE_INDEX].docs.check_dir // .defaults.docs.check_dir // \"docs\"" "$config_file")
+            
+            validation_version=$(yq eval ".packages[$PACKAGE_INDEX].validation.version // .defaults.validation.version // \"1.0.0-validation\"" "$config_file")
+            validation_test_version=$(yq eval ".packages[$PACKAGE_INDEX].validation.test_version // .defaults.validation.test_version // \"validation-test\"" "$config_file")
+            
+            is_monorepo="true"
+            packages_json="[]"
+            packages_count="1"
+            
+          elif [[ "$MODE" == "monorepo" ]]; then
+            # Monorepo mode - return all packages (Option A: Return all packages as JSON)
+            echo "📦 Returning all packages in monorepo"
+            
+            # Build JSON array of all packages
+            packages_json=$(yq eval -o=json '.packages | map({
+              "name": .name,
+              "package_name": (.package_name // .name),
+              "working_directory": .working_directory,
+              "tag_prefix": (.tag_prefix // (.name + "/")),
+              "base_branch": (.base_branch // "master")
+            })' "$config_file")
+            
+            packages_count=$(echo "$packages_json" | yq eval 'length' -)
+            
+            # Set default values for single-value outputs
+            project_name="monorepo"
+            package_name="monorepo"
+            base_branch=$(get_config ".defaults.git.base_branch" "master")
+            working_directory="./"
+            tag_prefix=""
+            is_monorepo="true"
+            
+            echo "Found $packages_count packages"
+          fi
           
           # Parse Python Package Configuration
           python_auth_method=$(get_config ".python.auth_method" "oidc")
@@ -253,6 +380,12 @@ jobs:
           echo "project_name=$project_name" >> $GITHUB_OUTPUT
           echo "package_name=$package_name" >> $GITHUB_OUTPUT
           echo "base_branch=$base_branch" >> $GITHUB_OUTPUT
+          echo "working_directory=$working_directory" >> $GITHUB_OUTPUT
+          echo "tag_prefix=$tag_prefix" >> $GITHUB_OUTPUT
+          
+          echo "is_monorepo=$is_monorepo" >> $GITHUB_OUTPUT
+          echo "packages_json=$packages_json" >> $GITHUB_OUTPUT
+          echo "packages_count=$packages_count" >> $GITHUB_OUTPUT
           
           echo "python_auth_method=$python_auth_method" >> $GITHUB_OUTPUT
           
@@ -291,6 +424,12 @@ jobs:
           echo "  - Name: $project_name"
           echo "  - Package: $package_name"
           echo "  - Base Branch: $base_branch"
+          echo "  - Working Directory: $working_directory"
+          echo "  - Tag Prefix: $tag_prefix"
+          echo "  - Is Monorepo: $is_monorepo"
+          if [[ "$is_monorepo" == "true" && -z "${{ inputs.package-name }}" ]]; then
+            echo "  - Packages Count: $packages_count"
+          fi
           echo ""
           echo "Python Package:"
           echo "  - Auth Method: $python_auth_method"

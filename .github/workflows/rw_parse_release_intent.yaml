@@ -4,6 +4,11 @@ description: 'Parse release intent from configuration files and workflow inputs'
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package name for monorepo (loads configuration from intent.yaml)'
+        required: false
+        default: ''
+        type: string
       level:
         description: 'Release level'
         required: false
@@ -65,8 +70,18 @@ on:
         value: ${{ jobs.parse_intent.outputs.notes }}
 
 jobs:
+  # Load package configuration from intent.yaml if package-name is provided
+  config:
+    name: Load Package Configuration
+    if: ${{ inputs.package-name != '' }}
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
+
   parse_intent:
     name: Parse Release Intent
+    needs: [config]
+    if: always()  # Run even if config job is skipped
     runs-on: ubuntu-latest
     outputs:
       do_release: ${{ steps.intent.outputs.do_release }}
@@ -139,5 +154,16 @@ jobs:
           INPUT_DOCKER: ${{ inputs.docker }}
           INPUT_DOCS: ${{ inputs.docs }}
           INPUT_NOTES: ${{ inputs.notes }}
+          # Package-specific configuration from intent.yaml (if available)
+          PACKAGE_NAME: ${{ inputs.package-name }}
+          WORKING_DIRECTORY: ${{ needs.config.outputs.working_directory || '' }}
+          IS_MONOREPO: ${{ needs.config.outputs.is_monorepo || 'false' }}
         working-directory: scripts
-        run: uv run release-intent
+        run: |
+          echo "📦 Package context:"
+          echo "  Package name: $PACKAGE_NAME"
+          echo "  Working directory: $WORKING_DIRECTORY"
+          echo "  Is monorepo: $IS_MONOREPO"
+          echo ""
+          echo "🎯 Running release intent parser..."
+          uv run release-intent

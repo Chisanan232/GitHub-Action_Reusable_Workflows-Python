@@ -147,7 +147,163 @@ jobs:
       upload-artifacts: true
 ```
 
-### Example 2: Independent Package Releases
+### Example 2: Tag-Triggered Releases 🏷️
+
+**The standard Git workflow** - Push a tag to trigger automatic releases.
+
+#### Single-Project Tag Release
+
+**Workflow** (`.github/workflows/release.yaml`):
+```yaml
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Matches v1.0.0, v2.1.3, etc.
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    secrets: inherit
+```
+
+**Usage**:
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+# Automatic release triggered!
+```
+
+#### Monorepo Tag Release
+
+**Tag Format**: `{package-name}/v{version}`
+
+**Workflow** (`.github/workflows/release.yaml`):
+```yaml
+name: Monorepo Release on Tag
+
+on:
+  push:
+    tags:
+      - '*/v*.*.*'  # Matches core/v1.0.0, utils/v2.1.3, etc.
+
+jobs:
+  # Step 1: Extract package from tag
+  extract-package:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_extract_package_from_tag.yaml@master
+  
+  # Step 2: Release the package
+  release:
+    needs: extract-package
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ needs.extract-package.outputs.package_name }}
+    secrets: inherit
+```
+
+**Usage**:
+```bash
+# Release core package
+git tag core/v1.2.3
+git push origin core/v1.2.3
+
+# Release utils package
+git tag utils/v2.0.0
+git push origin utils/v2.0.0
+```
+
+**Complete Examples**:
+- See [example-release-on-tag.yaml](.github/workflows/examples/example-release-on-tag.yaml)
+- See [example-monorepo-release-on-tag.yaml](.github/workflows/examples/example-monorepo-release-on-tag.yaml)
+
+---
+
+### Example 3: Centralized Configuration with Intent.yaml
+
+**Combine tag-triggered releases with centralized configuration!**
+
+#### Intent.yaml Configuration
+
+```yaml
+# .github/tag_and_release/intent.yaml
+packages:
+  - name: core
+    working_directory: ./packages/core
+    tag_prefix: core/
+    python:
+      auth_method: oidc
+    docker:
+      registries:
+        dockerhub: docker.io
+        ghcr: ghcr.io
+  
+  - name: utils
+    working_directory: ./packages/utils
+    tag_prefix: utils/
+    python:
+      auth_method: token  # Override default
+
+  - name: api
+    working_directory: ./services/api
+    tag_prefix: api/
+    # Uses all defaults
+
+defaults:
+  git:
+    commit:
+      name: "GitHub Actions Bot"
+      email: "actions@github.com"
+  python:
+    auth_method: oidc
+  docker:
+    registries:
+      dockerhub: docker.io
+      ghcr: ghcr.io
+    health_check:
+      port: 8000
+      path: "/health"
+```
+
+#### Release Workflow Using Intent.yaml
+
+```yaml
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'core/v*.*.*'
+      - 'utils/v*.*.*'
+      - 'api/v*.*.*'
+
+jobs:
+  # Extract package name from tag
+  parse-tag:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_extract_package_from_tag.yaml@master
+  
+  # Release with intent.yaml configuration
+  release:
+    needs: parse-tag
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ needs.parse-tag.outputs.package_name }}  # Loads from intent.yaml
+    secrets: inherit
+```
+
+**Benefits of Intent.yaml**:
+- ✅ Centralized configuration - single source of truth
+- ✅ Shared defaults across packages
+- ✅ Per-package overrides for flexibility
+- ✅ Validated by JSON schema
+- ✅ No workflow duplication
+
+### Example 3: Independent Package Releases (Direct Parameters)
 
 ```yaml
 name: Release Package

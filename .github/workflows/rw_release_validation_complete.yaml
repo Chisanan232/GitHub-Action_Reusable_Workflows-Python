@@ -5,6 +5,11 @@ name: Complete Release Validation Process
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package to validate (for monorepo). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
       level:
         description: 'Release level to test (auto, patch, minor, major)'
         required: false
@@ -55,10 +60,14 @@ jobs:
   config:
     name: Parse Configuration
     uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
 
   check-dockerfile:
     name: Check Dockerfile Exists
     runs-on: ubuntu-latest
+    needs: [config]
+    if: always()
     outputs:
       has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
     steps:
@@ -67,12 +76,19 @@ jobs:
 
       - name: Check for Dockerfile
         id: check
+        env:
+          WORK_DIR: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || './' }}
         run: |
-          if [ -f "Dockerfile" ]; then
-            echo "✅ Dockerfile found"
+          # Check for Dockerfile in package directory if monorepo, otherwise root
+          DOCKERFILE_PATH="${WORK_DIR}/Dockerfile"
+          
+          echo "📁 Checking for Dockerfile at: $DOCKERFILE_PATH"
+          
+          if [ -f "$DOCKERFILE_PATH" ]; then
+            echo "✅ Dockerfile found at $DOCKERFILE_PATH"
             echo "has_dockerfile=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ No Dockerfile found - Docker processes will be skipped"
+            echo "⚠️ No Dockerfile found at $DOCKERFILE_PATH - Docker processes will be skipped"
             echo "has_dockerfile=false" >> $GITHUB_OUTPUT
           fi
 
@@ -80,6 +96,7 @@ jobs:
     uses: ./.github/workflows/rw_parse_release_intent.yaml
     needs: config
     with:
+      package-name: ${{ inputs.package-name }}
       level: ${{ inputs.level || needs.config.outputs.level }}
       python: ${{ inputs.python || needs.config.outputs.python }}
       docker: ${{ inputs.docker || needs.config.outputs.docker }}
@@ -90,6 +107,7 @@ jobs:
     uses: ./.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml
     needs: [config, intent-parse]
     with:
+      package-name: ${{ inputs.package-name }}
       version: ${{ needs.config.outputs.validation_version }}  # Test version for validation
       debug_mode: true
     secrets:
@@ -100,6 +118,8 @@ jobs:
     needs: [config, build_git-tag_and_create_github-release]
     with:
       operation: 'test'
+      package_working_directory: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       artifact-name: 'validation-python-package'
 
   docker-build-dockerhub:
@@ -109,6 +129,8 @@ jobs:
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
       operation: 'test'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
       image-name: ${{ github.repository }}
       version: ${{ needs.config.outputs.validation_test_version }}
@@ -124,6 +146,8 @@ jobs:
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
       operation: 'test'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_ghcr }}
       image-name: ${{ github.repository }}
       version: ${{ needs.config.outputs.validation_test_version }}
@@ -136,6 +160,7 @@ jobs:
     uses: ./.github/workflows/rw_docusaurus_operations.yaml
     needs: [config, intent-parse]
     with:
+      package-name: ${{ inputs.package-name }}
       operation: 'test'
       upload-artifacts: true
       check-dir: ${{ needs.config.outputs.docs_check_dir }}
@@ -147,6 +172,8 @@ jobs:
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
       operation: 'security-scan'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_dockerhub }}  # Use DockerHub build for security scan
       image-name: ${{ github.repository }}
       version: ${{ needs.config.outputs.validation_test_version }}
