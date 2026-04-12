@@ -40,6 +40,20 @@ on:
         default: false
         type: boolean
     
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: 'DockerHub username'
+        required: false
+      DOCKERHUB_TOKEN:
+        description: 'DockerHub access token'
+        required: false
+      PYPI_API_TOKEN:
+        description: 'PyPI API token (required for token-based authentication)'
+        required: false
+      TEST_PYPI_API_TOKEN:
+        description: 'Test PyPI API token (required for token-based authentication)'
+        required: false
+    
     outputs:
       packages-released:
         description: 'JSON array of packages that were released'
@@ -204,18 +218,19 @@ jobs:
     name: Release ${{ matrix.package }}
     needs: [prepare-releases]
     if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run }}
-    runs-on: ubuntu-latest
     strategy:
       max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
       fail-fast: false
       matrix:
         package: ${{ fromJson(needs.prepare-releases.outputs.release_packages) }}
-    steps:
-      - name: Release package
-        uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
-        with:
-          package-name: ${{ matrix.package }}
-        secrets: inherit
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ matrix.package }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
   # Step 5: Summarize results
   summarize:
