@@ -14,7 +14,7 @@ This was problematic for:
 
 ## Solution
 
-Added graceful handling to skip test execution when no tests are found, instead of failing the workflow.
+Added graceful handling to skip test execution when no tests are found, instead of failing the workflow. Also added output values to inform downstream workflows whether tests were executed and coverage was generated.
 
 ### Changes Made
 
@@ -118,6 +118,47 @@ if-no-files-found: error
 if-no-files-found: warn
 ```
 
+#### 5. Workflow Outputs (Lines 95-104, 225-250)
+
+Added output values to inform downstream workflows about test execution status:
+
+**Workflow-level outputs:**
+```yaml
+outputs:
+  tests-executed:
+    description: "Whether tests were actually executed (true/false). False if no tests were found."
+    value: ${{ jobs.run_test_items.outputs.tests_executed }}
+  has-coverage:
+    description: "Whether coverage reports were generated (true/false)."
+    value: ${{ jobs.run_test_items.outputs.has_coverage }}
+  tests-skipped:
+    description: "Whether tests were skipped due to no test files found (true/false)."
+    value: ${{ jobs.run_test_items.outputs.tests_skipped }}
+```
+
+**Output setting step:**
+```yaml
+- name: Set workflow outputs
+  id: set_outputs
+  if: always()
+  run: |
+    # Determine if tests were executed
+    if [ "$HAS_TESTS_SPECIFIC" = "true" ] || [ "$HAS_TESTS_FOLDER" = "true" ]; then
+      echo "tests_executed=true" >> $GITHUB_OUTPUT
+      echo "tests_skipped=false" >> $GITHUB_OUTPUT
+    else
+      echo "tests_executed=false" >> $GITHUB_OUTPUT
+      echo "tests_skipped=true" >> $GITHUB_OUTPUT
+    fi
+    
+    # Determine if coverage was generated
+    if [ -f ".coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}" ]; then
+      echo "has_coverage=true" >> $GITHUB_OUTPUT
+    else
+      echo "has_coverage=false" >> $GITHUB_OUTPUT
+    fi
+```
+
 ## Benefits
 
 ### 1. **Graceful Degradation**
@@ -139,6 +180,12 @@ if-no-files-found: warn
 - Existing workflows with tests continue to work unchanged
 - No breaking changes to the API
 - All existing functionality preserved
+
+### 5. **Downstream Decision Making**
+- Output values allow conditional processing of coverage reports
+- Workflows can skip coverage aggregation if no tests ran
+- Better integration with coverage reporting tools
+- Enables smart CI/CD pipeline orchestration
 
 ## Example Scenarios
 
@@ -164,6 +211,81 @@ Package B: ⏭️ No tests - skipping
 Package C: ✅ Tests found - running
 Overall: Success (2 packages tested, 1 skipped)
 ```
+
+## Using Workflow Outputs
+
+The workflow now provides outputs that can be used by downstream jobs to make intelligent decisions:
+
+### Example 1: Conditional Coverage Processing
+
+```yaml
+jobs:
+  run-tests:
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      test_type: unit-test
+      test_folder: ./test
+
+  process-coverage:
+    needs: [run-tests]
+    # Only process coverage if tests were actually executed
+    if: ${{ needs.run-tests.outputs.tests-executed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage reports
+        uses: actions/download-artifact@v7
+        # ... process coverage
+```
+
+### Example 2: Conditional SonarQube Analysis
+
+```yaml
+jobs:
+  run-tests:
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      test_type: unit-test
+
+  sonarqube:
+    needs: [run-tests]
+    # Only run SonarQube if coverage reports exist
+    if: ${{ needs.run-tests.outputs.has-coverage == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@master
+```
+
+### Example 3: Notification Based on Test Execution
+
+```yaml
+jobs:
+  run-tests:
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      test_type: integration-test
+
+  notify:
+    needs: [run-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification
+        run: |
+          if [ "${{ needs.run-tests.outputs.tests-skipped }}" = "true" ]; then
+            echo "⏭️ Tests were skipped - no tests found"
+          elif [ "${{ needs.run-tests.outputs.tests-executed }}" = "true" ]; then
+            echo "✅ Tests completed successfully"
+          fi
+```
+
+### Output Values Reference
+
+| Output | Type | Description | Use Case |
+|--------|------|-------------|----------|
+| `tests-executed` | boolean | `true` if tests ran, `false` if skipped | Skip coverage processing when no tests ran |
+| `has-coverage` | boolean | `true` if coverage file exists | Conditional SonarQube/Codecov uploads |
+| `tests-skipped` | boolean | `true` if no tests found | Send notifications or adjust CI behavior |
 
 ## Testing Recommendations
 
