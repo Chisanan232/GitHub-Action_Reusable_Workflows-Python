@@ -6,6 +6,7 @@
 # Features:
 # - Automatic change detection via git diff
 # - Parallel or sequential package releases
+# - Multi-stage support: production, staging, validation
 # - Intent.yaml configuration integration
 # - Package dependency management (future)
 #
@@ -13,6 +14,7 @@
 #   1. Manual trigger: Select packages to release
 #   2. Scheduled: Detect and release changed packages
 #   3. PR merge: Release packages modified in PR
+#   4. Stage selection: Choose production, staging, or validation workflow
 
 name: Monorepo Release Orchestrator
 
@@ -33,6 +35,11 @@ on:
         description: 'Release mode: parallel or sequential'
         required: false
         default: 'sequential'
+        type: string
+      release-stage:
+        description: 'Release stage: production, staging, or validation'
+        required: false
+        default: 'production'
         type: string
       dry-run:
         description: 'Dry run mode - show what would be released without actually releasing'
@@ -213,11 +220,11 @@ jobs:
             echo "  (none)"
           fi
 
-  # Step 4: Release packages (matrix strategy)
-  release-packages:
-    name: Release ${{ matrix.package }}
+  # Step 4a: Production Release
+  release-packages-production:
+    name: Release ${{ matrix.package }} (Production)
     needs: [prepare-releases]
-    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run }}
+    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run && inputs.release-stage == 'production' }}
     strategy:
       max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
       fail-fast: false
@@ -232,10 +239,43 @@ jobs:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
       TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
+  # Step 4b: Staging Release
+  release-packages-staging:
+    name: Release ${{ matrix.package }} (Staging)
+    needs: [prepare-releases]
+    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run && inputs.release-stage == 'staging' }}
+    strategy:
+      max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare-releases.outputs.release_packages) }}
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_staging_complete.yaml@master
+    with:
+      package-name: ${{ matrix.package }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+  # Step 4c: Validation Release
+  release-packages-validation:
+    name: Validate ${{ matrix.package }}
+    needs: [prepare-releases]
+    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run && inputs.release-stage == 'validation' }}
+    strategy:
+      max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare-releases.outputs.release_packages) }}
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_validation_complete.yaml@master
+    with:
+      package-name: ${{ matrix.package }}
+
   # Step 5: Summarize results
   summarize:
     name: Release Summary
-    needs: [prepare-releases, release-packages]
+    needs: [prepare-releases, release-packages-production, release-packages-staging, release-packages-validation]
     if: always()
     runs-on: ubuntu-latest
     outputs:
@@ -248,7 +288,11 @@ jobs:
         env:
           RELEASE_COUNT: ${{ needs.prepare-releases.outputs.release_count }}
           RELEASE_PACKAGES: ${{ needs.prepare-releases.outputs.release_packages }}
+          RELEASE_STAGE: ${{ inputs.release-stage }}
           DRY_RUN: ${{ inputs.dry-run }}
+          PRODUCTION_RESULT: ${{ needs.release-packages-production.result }}
+          STAGING_RESULT: ${{ needs.release-packages-staging.result }}
+          VALIDATION_RESULT: ${{ needs.release-packages-validation.result }}
         run: |
           echo "## Monorepo Release Orchestrator Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -259,6 +303,7 @@ jobs:
             echo "🚀 **Mode**: Live Release" >> $GITHUB_STEP_SUMMARY
           fi
           
+          echo "🎯 **Stage**: $RELEASE_STAGE" >> $GITHUB_STEP_SUMMARY
           echo "📊 **Packages to release**: $RELEASE_COUNT" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
@@ -268,8 +313,24 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             
             if [ "$DRY_RUN" = "false" ]; then
+              # Determine which job result to check based on stage
+              case "$RELEASE_STAGE" in
+                production)
+                  RESULT="$PRODUCTION_RESULT"
+                  ;;
+                staging)
+                  RESULT="$STAGING_RESULT"
+                  ;;
+                validation)
+                  RESULT="$VALIDATION_RESULT"
+                  ;;
+                *)
+                  RESULT="skipped"
+                  ;;
+              esac
+              
               # Check if all releases succeeded
-              if [ "${{ needs.release-packages.result }}" = "success" ]; then
+              if [ "$RESULT" = "success" ]; then
                 echo "✅ All package releases completed successfully!" >> $GITHUB_STEP_SUMMARY
                 echo "all_successful=true" >> $GITHUB_OUTPUT
               else
