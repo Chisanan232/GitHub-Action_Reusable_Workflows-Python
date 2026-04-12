@@ -3,6 +3,9 @@
 # Workflow Description:
 #     Use UV to run testing by specific type with all test items via PyTest and generate its testing
 #     coverage report (it would save reports by 'actions/upload-artifact').
+#     
+#     Note: This workflow gracefully skips test execution if no tests are found in the specified path,
+#     instead of failing. This is useful for new packages or packages without tests.
 #
 # Workflow input parameters:
 #     * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
@@ -131,8 +134,22 @@ jobs:
         run: |
           ${{ inputs.pre_test_script }}
 
-      - name: Run the specific tests with pytest
+      - name: Check if tests exist (specific path)
         if: ${{ inputs.test_type == '' }}
+        id: check_tests_specific
+        working-directory: ${{ inputs.test_working_directory }}
+        run: |
+          TEST_PATH="${{ matrix.test-path }}"
+          if [ -d "$TEST_PATH" ] && find "$TEST_PATH" -name 'test_*.py' -o -name '*_test.py' | grep -q .; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+            echo "✅ Tests found in $TEST_PATH"
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No tests found in $TEST_PATH - skipping test execution"
+          fi
+
+      - name: Run the specific tests with pytest
+        if: ${{ inputs.test_type == '' && steps.check_tests_specific.outputs.has_tests == 'true' }}
         working-directory: ${{ inputs.test_working_directory }}
         run: |
           # Export additional environment variables if provided
@@ -144,8 +161,22 @@ jobs:
         env:
           E2E_TEST_API_TOKEN: ${{ secrets.e2e_test_api_token }}
 
-      - name: Run ${{ inputs.test_type }} tests with pytest
+      - name: Check if tests exist (test folder)
         if: ${{ inputs.test_type != '' }}
+        id: check_tests_folder
+        working-directory: ${{ inputs.test_working_directory }}
+        run: |
+          TEST_FOLDER="${{ inputs.test_folder }}"
+          if [ -d "$TEST_FOLDER" ] && find "$TEST_FOLDER" -name 'test_*.py' -o -name '*_test.py' | grep -q .; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+            echo "✅ Tests found in $TEST_FOLDER"
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No tests found in $TEST_FOLDER - skipping test execution"
+          fi
+
+      - name: Run ${{ inputs.test_type }} tests with pytest
+        if: ${{ inputs.test_type != '' && steps.check_tests_folder.outputs.has_tests == 'true' }}
         working-directory: ${{ inputs.test_working_directory }}
         run: |
           # Export additional environment variables if provided
@@ -158,16 +189,21 @@ jobs:
           E2E_TEST_API_TOKEN: ${{ secrets.e2e_test_api_token }}
 
       - name: Rename the code coverage result file
-        if: ${{ inputs.handle-coverage-report }}
+        if: ${{ inputs.handle-coverage-report && ((inputs.test_type == '' && steps.check_tests_specific.outputs.has_tests == 'true') || (inputs.test_type != '' && steps.check_tests_folder.outputs.has_tests == 'true')) }}
         working-directory: ${{ inputs.test_working_directory }}
         run: |
-          mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
+          if [ -f "./.coverage" ]; then
+            mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
+            echo "✅ Coverage file renamed"
+          else
+            echo "⚠️ No coverage file found - skipping rename"
+          fi
 
       - name: Upload code coverage result file
-        if: ${{ inputs.handle-coverage-report }}
+        if: ${{ inputs.handle-coverage-report && ((inputs.test_type == '' && steps.check_tests_specific.outputs.has_tests == 'true') || (inputs.test_type != '' && steps.check_tests_folder.outputs.has_tests == 'true')) }}
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.project_name != '' && format('coverage_{0}_{1}_{2}_{3}', inputs.project_name, inputs.test_type, matrix.os, matrix.python-version) || format('coverage_{0}_{1}_{2}', inputs.test_type, matrix.os, matrix.python-version) }}
           path: ${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
-          if-no-files-found: error
+          if-no-files-found: warn
           include-hidden-files: true
