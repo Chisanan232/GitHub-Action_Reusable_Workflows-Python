@@ -10,6 +10,11 @@
 # - Intent.yaml configuration integration
 # - Package dependency management (future)
 #
+# Permissions:
+# - contents: write - Required for creating tags and releases
+# - packages: write - Required for publishing packages
+# - id-token: write - Required for OIDC authentication
+#
 # Usage:
 #   1. Manual trigger: Select packages to release
 #   2. Scheduled: Detect and release changed packages
@@ -96,6 +101,11 @@ on:
       all-successful:
         description: 'Whether all releases succeeded'
         value: ${{ jobs.summarize.outputs.all_successful }}
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
 
 jobs:
   # Step 1: Load monorepo configuration
