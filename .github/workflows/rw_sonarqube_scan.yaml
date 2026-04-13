@@ -72,40 +72,31 @@ jobs:
         continue-on-error: true
         with:
           pattern: '*_${{ inputs.test_type }}_coverage_xml_report'
-          path: ./coverage-downloads
+          path: ${{ inputs.download_path }}
           merge-multiple: false
 
-      - name: Move coverage files to package directories
+      - name: Move coverage files to package directories (monorepo only)
+        if: inputs.project_name != ''
         run: |
-          echo "📂 Organizing coverage files for SonarQube..."
+          echo "📂 Organizing coverage files for monorepo..."
           
-          if [ -d "./coverage-downloads" ]; then
-            for artifact_dir in ./coverage-downloads/*; do
-              if [ -d "$artifact_dir" ]; then
-                artifact_name=$(basename "$artifact_dir")
-                echo "Processing: $artifact_name"
-                
-                # Parse package name from artifact naming pattern: {package_name}_{test_type}_coverage_xml_report
-                # Extract everything before _{test_type}_coverage_xml_report
-                package_name="${artifact_name%_${{ inputs.test_type }}_coverage_xml_report}"
-                
-                if [ -n "$package_name" ] && [ "$package_name" != "$artifact_name" ]; then
-                  # Monorepo: move to package directory
-                  mkdir -p "./$package_name"
-                  mv "$artifact_dir"/*.xml "./$package_name/" 2>/dev/null && echo "  ✅ Moved to $package_name/" || echo "  ⚠️ No XML files"
-                else
-                  # Single-project: move to root
-                  mv "$artifact_dir"/*.xml ./ 2>/dev/null && echo "  ✅ Moved to root" || echo "  ⚠️ No XML files"
-                fi
-              fi
-            done
-          else
-            echo "⚠️ No coverage artifacts found - scanning without coverage"
-          fi
+          for artifact_dir in ${{ inputs.download_path }}/*_${{ inputs.test_type }}_coverage_xml_report; do
+            if [ -d "$artifact_dir" ]; then
+              artifact_name=$(basename "$artifact_dir")
+              echo "Processing: $artifact_name"
+              
+              # Parse package name from artifact naming: {package_name}_{test_type}_coverage_xml_report
+              package_name="${artifact_name%_${{ inputs.test_type }}_coverage_xml_report}"
+              
+              # Move to package directory
+              mkdir -p "./$package_name"
+              mv "$artifact_dir"/*.xml "./$package_name/" 2>/dev/null && echo "  ✅ Moved to $package_name/" || echo "  ⚠️ No XML files"
+            fi
+          done
           
           echo ""
           echo "📊 Coverage files ready for SonarQube:"
-          find . -path ./coverage-downloads -prune -o -name "coverage*.xml" -type f -print 2>/dev/null || echo "No coverage files"
+          find . -name "coverage*.xml" -type f 2>/dev/null || echo "No coverage files"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v7.1.0
