@@ -118,15 +118,30 @@ jobs:
 
       - name: Download code coverage result files which has be handled by different test type process
         uses: actions/download-artifact@v8
+        continue-on-error: true
+        id: download_coverage_data
         with:
           name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_data_file', inputs.project_name, inputs.test_type) || format('{0}_coverage_data_file', inputs.test_type) }}
           path: ${{ inputs.download_path }}
 
       - name: Download code coverage result files which has be handled by different test type process
         uses: actions/download-artifact@v8
+        continue-on-error: true
+        id: download_coverage_xml
         with:
           name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
           path: ${{ inputs.download_path }}
+
+      - name: Check if coverage files exist
+        id: check_coverage
+        run: |
+          if [ -f "${{ inputs.download_path }}/coverage_${{ inputs.test_type }}.xml" ]; then
+            echo "has_coverage=true" >> $GITHUB_OUTPUT
+            echo "✅ Coverage XML file found"
+          else
+            echo "has_coverage=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No coverage XML file found - skipping upload"
+          fi
 
       - name: Install Python ${{ inputs.run_with_python_version }}
 #        if: ${{ inputs.upload-to-codecov == true || inputs.upload-to-coveralls == true }}
@@ -158,7 +173,7 @@ jobs:
 #            --verbose
 
       - name: Upload coverage report to Codecov https://codecov.io
-        if: ${{ inputs.upload-to-codecov == true }}
+        if: ${{ inputs.upload-to-codecov == true && steps.check_coverage.outputs.has_coverage == 'true' }}
         run: |
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
@@ -175,14 +190,14 @@ jobs:
         run: pip3 install coveralls
 
       - name: Upload coverage report to Coveralls https://coveralls.io
-        if: ${{ inputs.upload-to-coveralls == true }}
+        if: ${{ inputs.upload-to-coveralls == true && steps.check_coverage.outputs.has_coverage == 'true' }}
         working-directory: ${{ inputs.test_working_directory }}
         env:
           GITHUB_TOKEN: ${{ secrets.coveralls_token }}
         run: coveralls --verbose
 
       - name: Upload testing report to Codacy https://app.codacy.com/
-        if: ${{ inputs.upload-to-codacy == true }}
+        if: ${{ inputs.upload-to-codacy == true && steps.check_coverage.outputs.has_coverage == 'true' }}
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
           project-token: ${{ secrets.codacy_token }}
