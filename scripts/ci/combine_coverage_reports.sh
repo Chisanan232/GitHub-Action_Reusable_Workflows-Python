@@ -14,7 +14,25 @@ else
   coverage combine --data-file="$coveragedatafile" "$test_coverage_report_format$test_type"*
 fi
 
-# coverage report -m --data-file="$coveragedatafile"
+# Get current working directory for path remapping
+CURRENT_DIR=$(pwd)
+echo "📂 Current directory: $CURRENT_DIR"
+
+# Create .coveragerc to handle path remapping from macOS (/Users/) to Linux (/home/)
+cat > .coveragerc << EOF
+[paths]
+source =
+    src/
+    ./src/
+    */src/
+    /Users/runner/work/*/src/
+    /home/runner/work/*/src/
+EOF
+
+echo "📝 Created .coveragerc for path remapping"
+cat .coveragerc
+
+coverage report -m --data-file="$coveragedatafile"
 coverage xml --data-file="$coveragedatafile" -o coverage_"$test_type".xml
 cp "$coveragedatafile" .coverage
 echo "✅ All processing done." && exit 0
