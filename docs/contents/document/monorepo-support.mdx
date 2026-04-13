@@ -1,0 +1,599 @@
+# Monorepo Support
+
+## Overview
+
+All reusable workflows now support **Python monorepos** (multiple packages in one repository) while maintaining **100% backward compatibility** with single-project repositories.
+
+## Key Features
+
+✅ **Multiple packages in one repository** - Test, build, and release packages independently  
+✅ **Project-specific artifacts** - No naming collisions between packages  
+✅ **Independent releases** - Each package can have its own version and release cycle  
+✅ **Configurable paths** - Specify working directories and file paths per package  
+✅ **Backward compatible** - Existing single-project workflows work unchanged
+
+## Quick Start
+
+### Monorepo Structure Example
+
+```
+my-monorepo/
+├── packages/
+│   ├── core/
+│   │   ├── src/
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   ├── utils/
+│   │   ├── src/
+│   │   ├── tests/
+│   │   └── pyproject.toml
+│   └── api/
+│       ├── src/
+│       ├── tests/
+│       └── pyproject.toml
+└── .github/workflows/
+```
+
+### Basic Example: Testing Multiple Packages
+
+```yaml
+name: Test All Packages
+
+on: [push, pull_request]
+
+jobs:
+  test-core:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_uv_run_test.yaml@master
+    with:
+      project_name: core                          # Package identifier
+      test_working_directory: ./packages/core     # Package directory
+      test_type: unit-test
+      all_test_items_paths: '["./packages/core/tests"]'
+  
+  test-utils:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_uv_run_test.yaml@master
+    with:
+      project_name: utils
+      test_working_directory: ./packages/utils
+      test_type: unit-test
+      all_test_items_paths: '["./packages/utils/tests"]'
+```
+
+## Essential Parameters
+
+### Core Monorepo Parameters
+
+| Parameter | Used In | Purpose | Example |
+|-----------|---------|---------|---------|
+| `project_name` | Most workflows | Package identifier for artifact naming | `core`, `utils`, `api` |
+| `test_working_directory` | Test workflows | Directory for running tests | `./packages/core` |
+| `package_working_directory` | Build workflows | Directory for building packages | `./packages/core` |
+| `build_context` | Docker workflows | Docker build context directory | `./services/api` |
+| `tag_prefix` | Release workflows | Git tag prefix for releases | `core/` → `core/v1.2.3` |
+
+### Parameter Usage by Workflow
+
+#### Testing Workflows
+- `rw_uv_run_test.yaml`: `project_name`, `test_working_directory`
+- `rw_poetry_run_test.yaml`: `project_name`, `test_working_directory`
+- `rw_run_test.yaml`: `project_name`, `test_working_directory`, `requirements_path`, `requirements_test_path`
+- `rw_get_tests.yaml`: `test_working_directory`
+
+#### Building & Publishing
+- `rw_python_package.yaml`: `project_name`, `package_working_directory`
+- `rw_push_pypi.yaml`: `package_working_directory`
+
+#### Coverage & Quality
+- `rw_organize_test_cov_reports.yaml`: `project_name`
+- `rw_upload_test_cov_report.yaml`: `project_name`
+- `rw_sonarqube_scan.yaml`: `project_name`, `project_working_directory`, `sonar_project_key`
+
+#### Release & Deployment
+- `rw_build_git-tag_and_create_github-release.yaml`: `package_working_directory`, `tag_prefix`
+- `rw_docker_operations.yaml`: `build_context`, `dockerfile_path`, `project_name`
+- `rw_documentation_deployment.yaml`: `docs_working_directory`, `project_name`
+
+## Complete Examples
+
+### Example 1: Full CI/CD Pipeline
+
+```yaml
+name: CI/CD - Core Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/core/**'
+      - '.github/workflows/ci-core.yaml'
+
+jobs:
+  # Test
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_poetry_run_test.yaml@master
+    with:
+      project_name: core
+      test_working_directory: ./packages/core
+      test_type: unit-test
+      all_test_items_paths: '["./tests"]'
+  
+  # Organize coverage
+  coverage:
+    needs: test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      project_name: core
+      test_type: unit-test
+  
+  # Upload to Codecov
+  codecov:
+    needs: coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    with:
+      project_name: core
+      test_type: unit-test
+      upload-to-codecov: true
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+  
+  # Build package
+  build:
+    needs: test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_python_package.yaml@master
+    with:
+      operation: build
+      package_working_directory: ./packages/core
+      project_name: core
+      upload-artifacts: true
+```
+
+### Example 2: Tag-Triggered Releases 🏷️
+
+**The standard Git workflow** - Push a tag to trigger automatic releases.
+
+#### Single-Project Tag Release
+
+**Workflow** (`.github/workflows/release.yaml`):
+```yaml
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Matches v1.0.0, v2.1.3, etc.
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  release:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    secrets: inherit
+```
+
+**Usage**:
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+# Automatic release triggered!
+```
+
+#### Monorepo Tag Release
+
+**Tag Format**: `{package-name}/v{version}`
+
+**Workflow** (`.github/workflows/release.yaml`):
+```yaml
+name: Monorepo Release on Tag
+
+on:
+  push:
+    tags:
+      - '*/v*.*.*'  # Matches core/v1.0.0, utils/v2.1.3, etc.
+
+jobs:
+  # Step 1: Extract package from tag
+  extract-package:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_extract_package_from_tag.yaml@master
+  
+  # Step 2: Release the package
+  release:
+    needs: extract-package
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ needs.extract-package.outputs.package_name }}
+    secrets: inherit
+```
+
+**Usage**:
+```bash
+# Release core package
+git tag core/v1.2.3
+git push origin core/v1.2.3
+
+# Release utils package
+git tag utils/v2.0.0
+git push origin utils/v2.0.0
+```
+
+**Complete Examples**:
+- See [example-release-on-tag.yaml](.github/workflows/examples/example-release-on-tag.yaml)
+- See [example-monorepo-release-on-tag.yaml](.github/workflows/examples/example-monorepo-release-on-tag.yaml)
+
+---
+
+### Example 3: Centralized Configuration with Intent.yaml
+
+**Combine tag-triggered releases with centralized configuration!**
+
+#### Intent.yaml Configuration
+
+```yaml
+# .github/tag_and_release/intent.yaml
+packages:
+  - name: core
+    working_directory: ./packages/core
+    tag_prefix: core/
+    python:
+      auth_method: oidc
+    docker:
+      registries:
+        dockerhub: docker.io
+        ghcr: ghcr.io
+  
+  - name: utils
+    working_directory: ./packages/utils
+    tag_prefix: utils/
+    python:
+      auth_method: token  # Override default
+
+  - name: api
+    working_directory: ./services/api
+    tag_prefix: api/
+    # Uses all defaults
+
+defaults:
+  git:
+    commit:
+      name: "GitHub Actions Bot"
+      email: "actions@github.com"
+  python:
+    auth_method: oidc
+  docker:
+    registries:
+      dockerhub: docker.io
+      ghcr: ghcr.io
+    health_check:
+      port: 8000
+      path: "/health"
+```
+
+#### Release Workflow Using Intent.yaml
+
+```yaml
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'core/v*.*.*'
+      - 'utils/v*.*.*'
+      - 'api/v*.*.*'
+
+jobs:
+  # Extract package name from tag
+  parse-tag:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_extract_package_from_tag.yaml@master
+  
+  # Release with intent.yaml configuration
+  release:
+    needs: parse-tag
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ needs.parse-tag.outputs.package_name }}  # Loads from intent.yaml
+    secrets: inherit
+```
+
+**Benefits of Intent.yaml**:
+- ✅ Centralized configuration - single source of truth
+- ✅ Shared defaults across packages
+- ✅ Per-package overrides for flexibility
+- ✅ Validated by JSON schema
+- ✅ No workflow duplication
+
+### Example 3: Independent Package Releases (Direct Parameters)
+
+```yaml
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'core/v*.*.*'
+      - 'utils/v*.*.*'
+
+jobs:
+  # Parse tag to determine package
+  parse-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.parse.outputs.package }}
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+      - name: Parse tag
+        id: parse
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          PACKAGE=$(echo $TAG | cut -d'/' -f1)
+          VERSION=$(echo $TAG | cut -d'/' -f2 | sed 's/^v//')
+          echo "package=$PACKAGE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+  
+  # Build and release
+  release:
+    needs: parse-tag
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release.yaml@master
+    with:
+      project_type: python-package
+      project_name: ${{ needs.parse-tag.outputs.package }}
+      package_working_directory: ./packages/${{ needs.parse-tag.outputs.package }}
+      tag_prefix: ${{ needs.parse-tag.outputs.package }}/
+    secrets:
+      github_auth_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Example 3: Docker Multi-Service Build
+
+```yaml
+name: Build Docker Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/**'
+
+jobs:
+  build-services:
+    strategy:
+      matrix:
+        service: [api, worker, admin]
+    
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
+    with:
+      operation: build
+      build_context: ./services/${{ matrix.service }}
+      dockerfile_path: Dockerfile
+      project_name: ${{ matrix.service }}
+      image-name: myorg/${{ matrix.service }}
+      version: ${{ github.sha }}
+```
+
+## Artifact Naming
+
+### Single-Project (Backward Compatible)
+```
+coverage_unit-test_ubuntu-latest_3.13
+unit-test_coverage_data_file
+```
+
+### Monorepo (with project_name)
+```
+coverage_core_unit-test_ubuntu-latest_3.13
+core_unit-test_coverage_data_file
+```
+
+This prevents naming collisions when multiple packages are tested simultaneously.
+
+## Git Tagging Strategy
+
+### Single-Project
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+### Monorepo
+```bash
+# Tag individual packages
+git tag core/v1.2.3
+git tag utils/v2.0.0
+git tag api/v1.5.0
+
+git push origin --tags
+```
+
+**Benefits**:
+- Clear package identification
+- Independent versioning
+- Automated release detection
+- Better GitHub release organization
+
+## Best Practices
+
+### 1. Consistent Naming
+Use the same `project_name` across all workflows for a package:
+
+```yaml
+# ✅ Good - consistent naming
+test:
+  with:
+    project_name: core
+
+build:
+  with:
+    project_name: core
+
+release:
+  with:
+    project_name: core
+```
+
+### 2. Path-Based Triggers
+Only run workflows when specific packages change:
+
+```yaml
+on:
+  push:
+    paths:
+      - 'packages/core/**'
+      - '.github/workflows/ci-core.yaml'
+```
+
+### 3. Matrix Strategy for Multiple Packages
+Test all packages efficiently:
+
+```yaml
+jobs:
+  test:
+    strategy:
+      matrix:
+        package: [core, utils, api]
+    
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      project_name: ${{ matrix.package }}
+      test_working_directory: ./packages/${{ matrix.package }}
+      test_type: unit-test
+```
+
+### 4. Independent Coverage Reports
+Configure separate coverage for each package:
+
+```yaml
+jobs:
+  upload-coverage:
+    strategy:
+      matrix:
+        package: [core, utils]
+    
+    uses: ./.github/workflows/rw_upload_test_cov_report.yaml
+    with:
+      project_name: ${{ matrix.package }}
+      upload-to-codecov: true
+```
+
+## Migration Guide
+
+### Step 1: Update Workflow Structure
+Add `project_name` and working directory parameters to existing workflows.
+
+**Before** (Single-Project):
+```yaml
+test:
+  uses: ./.github/workflows/rw_uv_run_test.yaml
+  with:
+    test_type: unit-test
+```
+
+**After** (Monorepo):
+```yaml
+test-core:
+  uses: ./.github/workflows/rw_uv_run_test.yaml
+  with:
+    project_name: core
+    test_working_directory: ./packages/core
+    test_type: unit-test
+```
+
+### Step 2: Update Artifact Dependencies
+Ensure artifact downloads use correct project names:
+
+```yaml
+organize-coverage:
+  with:
+    project_name: core  # Downloads coverage_core* artifacts
+```
+
+### Step 3: Configure SonarQube (if used)
+Set up project-specific SonarQube keys:
+
+```yaml
+sonar:
+  with:
+    project_name: core
+    project_working_directory: ./packages/core
+    sonar_project_key: myorg_monorepo_core
+```
+
+## Backward Compatibility
+
+All changes are **optional** with sensible defaults. Existing workflows continue to work without modifications:
+
+```yaml
+# This still works - no changes needed!
+test:
+  uses: ./.github/workflows/rw_uv_run_test.yaml
+  with:
+    test_type: unit-test
+    all_test_items_paths: '["./tests"]'
+```
+
+## Advanced Documentation
+
+For comprehensive guides and examples, see:
+
+- **Planning Document**: `.ai/prompt/2026.4.4/monorepo-support-planning.md`
+- **Usage Guide**: `.ai/prompt/2026.4.4/monorepo-usage-guide.md`
+- **Migration Guide**: `.ai/prompt/2026.4.4/migration-guide-single-to-monorepo.md`
+- **Release & Docker Guide**: `.ai/prompt/2026.4.4/phase-3-release-docker-guide.md`
+- **Implementation Summary**: `.ai/prompt/2026.4.4/IMPLEMENTATION-COMPLETE.md`
+
+## Troubleshooting
+
+### Issue: Artifacts Not Found
+
+**Symptom**: Workflow can't find coverage artifacts
+
+**Solution**: Ensure `project_name` matches across test and coverage workflows
+
+```yaml
+# Test workflow
+with:
+  project_name: core  # Must match
+
+# Coverage workflow
+with:
+  project_name: core  # Must match
+```
+
+### Issue: Wrong Working Directory
+
+**Symptom**: Dependencies not found during test/build
+
+**Solution**: Verify working directory points to package location
+
+```yaml
+with:
+  test_working_directory: ./packages/core  # Correct path
+```
+
+### Issue: Tag Conflicts
+
+**Symptom**: Git tag already exists
+
+**Solution**: Use package-specific tag prefixes
+
+```yaml
+with:
+  tag_prefix: core/  # Creates core/v1.2.3
+```
+
+## FAQ
+
+**Q: Do I need to change my existing workflows?**  
+A: No! All monorepo parameters are optional. Existing workflows work unchanged.
+
+**Q: Can I use both single-project and monorepo workflows?**  
+A: Yes! You can gradually migrate or use different approaches per project.
+
+**Q: How do I handle shared dependencies?**  
+A: Each package can have its own dependencies. For shared code, consider creating a shared package.
+
+**Q: What about coverage aggregation across packages?**  
+A: Currently, each package has separate coverage. Use external tools for cross-package aggregation if needed.
+
+**Q: Can I release packages independently?**  
+A: Yes! Use tag prefixes (`core/v1.2.3`) to trigger package-specific releases.

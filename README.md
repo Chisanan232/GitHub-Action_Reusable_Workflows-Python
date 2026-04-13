@@ -30,6 +30,121 @@ this project. This project has some workflow templates for reusing in GitHub Act
 * Be easier to read and configure at configurations of GitHub Action work flow.
 * It has greatly improved the GitHub Action configuration to be more reusable in multiple different projects (git repositories).
 
+## 🎉 Monorepo Support
+
+**NEW**: All reusable workflows now support **Python monorepos** while maintaining 100% backward compatibility!
+
+### Key Features
+
+✅ **Multiple packages in one repository** - Test, build, and release packages independently  
+✅ **Project-specific artifacts** - No naming collisions between packages  
+✅ **Independent releases** - Each package can have its own version and release cycle  
+✅ **Backward compatible** - Existing single-project workflows work unchanged
+
+### Quick Example
+
+```yaml
+# Test multiple packages independently
+jobs:
+  test-core:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_uv_run_test.yaml@master
+    with:
+      project_name: core                          # NEW: Package identifier
+      test_working_directory: ./packages/core     # NEW: Package directory
+      test_type: unit-test
+      all_test_items_paths: '["./packages/core/tests"]'
+  
+  test-utils:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_uv_run_test.yaml@master
+    with:
+      project_name: utils
+      test_working_directory: ./packages/utils
+      test_type: unit-test
+      all_test_items_paths: '["./packages/utils/tests"]'
+```
+
+### Essential Parameters for Monorepo
+
+| Parameter | Usage | Example |
+|-----------|-------|---------|
+| `project_name` | Package identifier (artifact naming) | `core`, `utils`, `api` |
+| `test_working_directory` | Directory for running tests | `./packages/core` |
+| `package_working_directory` | Directory for building packages | `./packages/core` |
+| `build_context` | Docker build context directory | `./services/api` |
+| `tag_prefix` | Git tag prefix for releases | `core/` → `core/v1.2.3` |
+
+### Configuration Options
+
+**🎯 Option 1: Direct Parameters** (Recommended for testing/building)
+- Pass parameters directly to each workflow
+- Explicit and clear per-package configuration
+- Best for test and build workflows
+
+**📝 Option 2: Intent.yaml Configuration** (Recommended for releases)
+- Centralized configuration in `.github/tag_and_release/intent.yaml`
+- Define multiple packages with shared defaults
+- Package-specific overrides supported
+- Ideal for release workflows with complex settings
+
+**Example monorepo intent.yaml**:
+```yaml
+packages:
+  - name: core
+    working_directory: ./packages/core
+    tag_prefix: core/
+    python:
+      auth_method: oidc
+  
+  - name: utils
+    working_directory: ./packages/utils
+    tag_prefix: utils/
+
+defaults:
+  git:
+    commit:
+      name: "GitHub Actions Bot"
+  python:
+    auth_method: token
+```
+
+**Using in release workflows**:
+```yaml
+jobs:
+  release-core:
+    uses: ./.github/workflows/rw_release_complete.yaml
+    with:
+      package-name: core  # Loads config from intent.yaml
+```
+
+### 🏷️ Tag-Triggered Releases
+
+Release packages automatically when you push version tags:
+
+**Single Project**:
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+# Triggers automatic release
+```
+
+**Monorepo** (package-specific):
+```bash
+git tag core/v1.2.3
+git push origin core/v1.2.3
+# Triggers release of 'core' package only
+```
+
+**Example Workflows**:
+- See [`.github/workflows/examples/example-release-on-tag.yaml`](.github/workflows/examples/example-release-on-tag.yaml) for single-project
+- See [`.github/workflows/examples/example-monorepo-release-on-tag.yaml`](.github/workflows/examples/example-monorepo-release-on-tag.yaml) for monorepo
+
+📚 **Complete Documentation**: See [`.ai/prompt/2026.4.4/`](.ai/prompt/2026.4.4/) and [`.ai/prompt/2026.4.5/`](.ai/prompt/2026.4.5/) for detailed guides:
+- `monorepo-usage-guide.md` - Comprehensive usage examples
+- `migration-guide-single-to-monorepo.md` - Migration from single-project
+- `phase-3-release-docker-guide.md` - Release & Docker examples
+- `intent-yaml-monorepo-analysis.md` - Intent.yaml monorepo support analysis
+- `project-property-function-analysis.md` - Project configuration deep dive
+- `monorepo-intent-yaml-support-plan.md` - Implementation planning
 
 ## Workflow template usages
 
@@ -55,11 +170,12 @@ The usage of each workflow template.
 * Description: Prepare the test items.
 * Options:
 
-| option name          | data type | optional or required                                       | function content                                          |
-|----------------------|-----------|------------------------------------------------------------|-----------------------------------------------------------|
-| shell_path           | string    | Optional, Default value is _./scripts/ci/get-all-tests.sh_ | The path shell script for getting the testing items.      |
-| shell_arg            | string    | Required                                                   | Input arguments of the shell script.                      |
-| use_customized_shell | boolean   | Optional, Default value is _false_                         | Whether it should use the customized shell script or not. |
+| option name              | data type | optional or required                                       | function content                                                                        |
+|--------------------------|-----------|------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| test_working_directory   | string    | Optional, Default value is _'./'_                          | 🆕 **Monorepo**: Working directory for running tests. Use for package-specific testing. |
+| shell_path               | string    | Optional, Default value is _./scripts/ci/get-all-tests.sh_ | The path shell script for getting the testing items.                                    |
+| shell_arg                | string    | Required                                                   | Input arguments of the shell script.                                                    |
+| use_customized_shell     | boolean   | Optional, Default value is _false_                         | Whether it should use the customized shell script or not.                               |
 
 * Output: 
   * all_test_items: All the test items it would run.
@@ -103,18 +219,22 @@ The usage of each workflow template.
 * Description: Run testing by specific type with all test items via PyTest and generate its testing coverage report (it would save reports by _actions/upload-artifact_).
 * Options:
 
-| option name             | data type | optional or required                       | function content                                                                           |
-|-------------------------|-----------|--------------------------------------------|--------------------------------------------------------------------------------------------|
-| runtime_os              | string    | Optional, Default value is _ubuntu-latest_ | The OS to use for runtime environment.                                                     |
-| python_version          | string    | Optional, Default value is _3.11_          | The Python version to run the test in workflow.                                            |
-| test_type               | string    | Required                                   | The testing type. In generally, it only has 2 options: _unit-test_ and _integration-test_. |
-| all_test_items_paths    | string    | Required                                   | The target paths of test items under test.                                                 |
-| setup_http_server       | string    | Optional, Default value is _false_         | If it's true, it would set up and run HTTP server for testing.                             |
-| http_server_host        | string    | Optional, Default value is _0.0.0.0_       | The host IPv4 address of HTTP server.                                                      |
-| http_server_port        | string    | Optional, Default value is _12345_         | The port number of HTTP server.                                                            |
-| http_server_app_module  | string    | Optional, Default value is _app_           | The module path of HTTP server.                                                            |
-| http_server_enter_point | string    | Optional, Default value is _app_           | The object about the web application.                                                      |
-| debug_mode              | boolean   | Optional, Default value is _false_         | For debug, so it's matrix would only has one os: ubuntu-22.04 & one python-version: 3.10.  |
+| option name              | data type | optional or required                                  | function content                                                                                  |
+|--------------------------|-----------|-------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| project_name             | string    | Optional, Default value is _''_                       | 🆕 **Monorepo**: Project identifier for artifact naming. Prevents collisions in monorepo.         |
+| test_working_directory   | string    | Optional, Default value is _'./'_                     | 🆕 **Monorepo**: Working directory for running tests.                                             |
+| requirements_path        | string    | Optional, Default value is _'./requirements/requirements.txt'_ | 🆕 **Monorepo**: Path to requirements.txt relative to working directory.                 |
+| requirements_test_path   | string    | Optional, Default value is _'./requirements/requirements-test.txt'_ | 🆕 **Monorepo**: Path to test requirements file relative to working directory.      |
+| runtime_os               | string    | Optional, Default value is _ubuntu-latest_            | The OS to use for runtime environment.                                                            |
+| python_version           | string    | Optional, Default value is _3.11_                     | The Python version to run the test in workflow.                                                   |
+| test_type                | string    | Required                                              | The testing type. In generally, it only has 2 options: _unit-test_ and _integration-test_.        |
+| all_test_items_paths     | string    | Required                                              | The target paths of test items under test.                                                        |
+| setup_http_server        | string    | Optional, Default value is _false_                    | If it's true, it would set up and run HTTP server for testing.                                    |
+| http_server_host         | string    | Optional, Default value is _0.0.0.0_                  | The host IPv4 address of HTTP server.                                                             |
+| http_server_port         | string    | Optional, Default value is _12345_                    | The port number of HTTP server.                                                                   |
+| http_server_app_module   | string    | Optional, Default value is _app_                      | The module path of HTTP server.                                                                   |
+| http_server_enter_point  | string    | Optional, Default value is _app_                      | The object about the web application.                                                             |
+| debug_mode               | boolean   | Optional, Default value is _false_                    | For debug, so it's matrix would only has one os: ubuntu-22.04 & one python-version: 3.10.         |
 
 * Output: 
 

@@ -1,0 +1,88 @@
+---
+id: request-changes
+title: Request Additions or Changes
+sidebar_position: 2
+---
+
+# Requesting Additions or Changes
+
+Have an idea for improving GitHub Action Reusable Workflows? We welcome feature requests and suggestions from our community! This guide will help you submit effective feature requests.
+
+## Before Submitting
+
+Before submitting a feature request, please:
+
+1. **Check existing requests**: Search the [GitHub Issues](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/issues) to see if someone has already suggested a similar feature.
+2. **Read the documentation**: Make sure the feature doesn't already exist or isn't already planned in our roadmap.
+3. **Consider compatibility**: Think about how your suggestion fits with the existing architecture and goals of the project.
+
+## How to Submit a Feature Request
+
+Please submit feature requests through our [GitHub Issues](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/issues) page using the "Feature Request" template.
+
+### What to Include
+
+An effective feature request should include:
+
+1. **Clear and descriptive title**: Summarize the proposed feature concisely.
+2. **Problem statement**: Describe the problem that this feature would solve.
+   - What are you trying to accomplish?
+   - Why is it difficult or impossible with the current implementation?
+   - Who else might benefit from this feature?
+
+3. **Proposed solution**: Describe your idea for implementing the feature.
+   - Be as specific as possible
+   - Include mockups or diagrams if applicable
+   - Consider edge cases and potential issues
+
+4. **Alternative solutions**: Have you considered other ways to solve this problem?
+
+5. **Implementation considerations**: If you have technical insights about how to implement the feature, please share them.
+
+6. **Impact and importance**: Explain why this feature would be valuable to users and the project.
+
+## Example Feature Request
+
+```
+Title: Add support for Docker container workflows
+
+Problem Statement:
+Currently, GitHub Action Reusable Workflows focuses on Python testing and deployment.
+However, many Python projects also need Docker container building and publishing.
+Adding Docker workflow support would make this more comprehensive for containerized applications.
+
+Proposed Solution:
+Add new reusable workflows for Docker operations:
+- Build and test Docker images
+- Multi-architecture builds (amd64, arm64)
+- Push to Docker Hub and GitHub Container Registry
+- Security scanning with Trivy or similar tools
+
+The implementation should include:
+1. New rw_docker_build.yaml workflow
+2. Support for Docker Compose testing
+3. Integration with existing test workflows
+4. Proper caching for faster builds
+
+Alternative Solutions:
+1. Extend existing workflows with Docker build steps
+2. Create separate Docker-specific workflow repository
+
+Implementation Considerations:
+This would require careful handling of Docker credentials and registry authentication.
+Should support both Docker Hub and GHCR.
+
+Impact and Importance:
+This feature would greatly benefit Python projects that deploy as containers,
+providing a complete CI/CD solution from testing to deployment.
+```
+
+## After Submitting
+
+After you've submitted a feature request:
+
+- Be responsive to questions about your proposal
+- Be open to feedback and suggestions
+- Consider contributing to the implementation if you have the skills
+
+Thank you for helping improve GitHub Action Reusable Workflows!

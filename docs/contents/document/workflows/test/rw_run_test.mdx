@@ -1,0 +1,266 @@
+---
+id: rw_run_test
+title: Run Test Workflow
+sidebar_position: 3
+---
+
+# rw_run_test.yaml
+
+Execute tests with PyTest and generate coverage reports.
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_run_test.yaml)
+
+## Description
+
+This workflow runs your Python tests using PyTest with a single Python version. It supports HTTP server setup for integration tests and automatically generates coverage reports that can be used by subsequent workflows.
+
+## Inputs
+
+| Parameter                 | Type    | Required | Default         | Description                                                   |
+|---------------------------|---------|----------|-----------------|---------------------------------------------------------------|
+| `runtime_os`              | string  | No       | `ubuntu-latest` | Operating system for the test environment                     |
+| `python_version`          | string  | No       | `3.11`          | Python version to use for testing                             |
+| `test_type`               | string  | **Yes**  | -               | Type of tests to run (`unit-test`, `integration-test`, etc.)  |
+| `all_test_items_paths`    | string  | **Yes**  | -               | Paths to test items (from `rw_get_tests` output)              |
+| `setup_http_server`       | boolean | No       | `false`         | Whether to start an HTTP server for testing                   |
+| `http_server_host`        | string  | No       | `0.0.0.0`       | HTTP server host address                                      |
+| `http_server_port`        | string  | No       | `12345`         | HTTP server port number                                       |
+| `http_server_app_module`  | string  | No       | `app`           | Python module path for the HTTP server                        |
+| `http_server_enter_point` | string  | No       | `app`           | Application entry point object                                |
+| `debug_mode`              | boolean | No       | `false`         | Enable debug mode (limited matrix: ubuntu-22.04, Python 3.10) |
+
+## Outputs
+
+This workflow doesn't have direct outputs but uploads artifacts:
+
+| Artifact Name | Description                                                          |
+|---------------|----------------------------------------------------------------------|
+| `coverage`    | Coverage report file (`.coverage.<test_type>.<os>-<python_version>`) |
+
+## Usage Examples
+
+### Basic Unit Test
+
+```yaml
+jobs:
+  run-unit-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+### With Specific Python Version
+
+```yaml
+jobs:
+  run-tests-py310:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.10'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+### Integration Tests with HTTP Server
+
+For tests that require a running HTTP server:
+
+```yaml
+jobs:
+  run-integration-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: integration-test
+      all_test_items_paths: test/integration_test/
+      setup_http_server: true
+      http_server_host: 0.0.0.0
+      http_server_port: 8080
+      http_server_app_module: test._http_server.app
+      http_server_enter_point: app
+```
+
+### Using Test Discovery Output
+
+Combine with `rw_get_tests` workflow:
+
+```yaml
+jobs:
+  prepare-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  run-tests:
+    needs: prepare-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: ${{ needs.prepare-tests.outputs.all_test_items }}
+```
+
+### Debug Mode
+
+For troubleshooting with limited matrix:
+
+```yaml
+jobs:
+  debug-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.10'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+      debug_mode: true
+```
+
+### Different Operating Systems
+
+```yaml
+jobs:
+  test-on-macos:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      runtime_os: macos-latest
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+## Complete CI Pipeline Example
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  prepare-unit-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  run-unit-tests:
+    needs: prepare-unit-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: ${{ needs.prepare-unit-tests.outputs.all_test_items }}
+
+  prepare-integration-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/integration_test/
+
+  run-integration-tests:
+    needs: prepare-integration-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: integration-test
+      all_test_items_paths: ${{ needs.prepare-integration-tests.outputs.all_test_items }}
+      setup_http_server: true
+      http_server_port: 8080
+      http_server_app_module: test._http_server.app
+      http_server_enter_point: app
+
+  organize-coverage:
+    needs: [run-unit-tests, run-integration-tests]
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: unit-test
+```
+
+## HTTP Server Configuration
+
+When `setup_http_server` is `true`, the workflow:
+
+1. Starts the HTTP server in the background
+2. Waits for the server to be ready
+3. Runs the tests
+4. Automatically stops the server after tests complete
+
+### HTTP Server Module Structure
+
+Your HTTP server module should be structured like:
+
+```python
+# test/_http_server/app.py
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+```
+
+## Coverage Reports
+
+The workflow generates coverage reports using `pytest-cov`. The coverage file is uploaded as an artifact with the naming pattern:
+
+```
+.coverage.<test_type>.<os>-<python_version>
+```
+
+These reports can be:
+- Combined with other coverage reports using `rw_organize_test_cov_reports`
+- Uploaded to coverage platforms using `rw_upload_test_cov_report`
+
+## Requirements
+
+Your project should have:
+
+1. **pytest** installed
+2. **pytest-cov** for coverage reporting
+3. Test files following pytest conventions
+4. `requirements.txt` or `pyproject.toml` with dependencies
+
+## Differences from Poetry Workflow
+
+| Feature                 | rw_run_test   | rw_poetry_run_test  |
+|-------------------------|---------------|---------------------|
+| Package Manager         | pip           | Poetry              |
+| Dependency Installation | `pip install` | `poetry install`    |
+| Test Execution          | Direct pytest | `poetry run pytest` |
+| Python Version Support  | 3.6+          | 3.8+                |
+| Working Directory       | Root only     | Configurable        |
+
+For Poetry-managed projects, use [rw_poetry_run_test](rw_poetry_run_test.mdx) instead.
+
+## Troubleshooting
+
+### Tests Not Found
+
+- Verify `all_test_items_paths` contains valid paths
+- Check test file naming conventions
+- Ensure tests are in the repository
+
+### HTTP Server Fails to Start
+
+- Verify the module path is correct
+- Check port availability
+- Review server logs in workflow output
+- Ensure all server dependencies are installed
+
+### Coverage Report Missing
+
+- Confirm pytest-cov is installed
+- Check test execution completed successfully
+- Review workflow logs for errors
+
+## Related Workflows
+
+- [rw_get_tests](rw_get_tests.mdx) - Discover test items
+- [rw_poetry_run_test](rw_poetry_run_test.mdx) - Poetry version
+- [rw_run_test_with_multi_py_versions](rw_run_test_with_multi_py_versions.mdx) - Multi-version testing
+- [rw_organize_test_cov_reports](../coverage_report/rw_organize_test_cov_reports.mdx) - Organize coverage
+- [rw_upload_test_cov_report](../coverage_report/rw_upload_test_cov_report.mdx) - Upload coverage

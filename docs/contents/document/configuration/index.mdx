@@ -1,0 +1,450 @@
+---
+id: configuration
+title: Configuration Guide
+sidebar_position: 3
+---
+
+# Configuration Guide
+
+This guide covers how to configure your project to work with GitHub Action Reusable Workflows.
+
+## Project Structure Requirements
+
+### Standard Python Project
+
+```
+your-project/
+├── .github/
+│   └── workflows/
+│       └── ci.yaml
+├── src/
+│   └── your_package/
+│       ├── __init__.py
+│       └── __pkg_info__.py  # Required for deployment
+├── test/
+│   ├── unit_test/
+│   │   └── test_*.py
+│   └── integration_test/
+│       └── test_*.py
+├── setup.py  # or pyproject.toml
+└── requirements.txt
+```
+
+### Poetry-Managed Project
+
+```
+your-project/
+├── .github/
+│   └── workflows/
+│       └── ci.yaml
+├── src/
+│   └── your_package/
+│       ├── __init__.py
+│       └── __pkg_info__.py
+├── test/
+│   ├── unit_test/
+│   └── integration_test/
+├── pyproject.toml
+└── poetry.lock
+```
+
+## Version File Configuration
+
+For deployment workflows, create a `__pkg_info__.py` file in your package:
+
+```python
+# src/your_package/__pkg_info__.py
+__version__ = "1.0.0"
+```
+
+This file is used by:
+- `rw_checking_deployment_state` - To detect version changes
+- `rw_build_git-tag_and_create_github-release` - To create releases
+- `rw_push_pypi` - To publish packages
+
+## GitHub Secrets Setup
+
+### Navigate to Secrets
+
+1. Go to your GitHub repository
+2. Click **Settings**
+3. Navigate to **Secrets and variables** → **Actions**
+4. Click **New repository secret**
+
+### Required Secrets by Feature
+
+#### PyPI Deployment
+
+```
+PYPI_USERNAME=__token__
+PYPI_TOKEN=pypi-xxxxxxxxxxxxx
+TEST_PYPI_TOKEN=pypi-xxxxxxxxxxxxx
+```
+
+Or use OIDC (recommended):
+```yaml
+# No secrets needed, configure in workflow:
+permissions:
+  id-token: write
+```
+
+#### Code Coverage
+
+```
+CODECOV_TOKEN=xxxxxxxxxxxxx
+COVERALLS_TOKEN=xxxxxxxxxxxxx
+CODACY_PROJECT_TOKEN=xxxxxxxxxxxxx
+```
+
+#### Docker
+
+```
+DOCKERHUB_USERNAME=your-username
+DOCKERHUB_TOKEN=xxxxxxxxxxxxx
+GITHUB_TOKEN=automatically-provided
+```
+
+#### SonarQube
+
+```
+SONAR_TOKEN=xxxxxxxxxxxxx
+```
+
+## Intent Configuration File
+
+For advanced release management, create `.github/tag_and_release/intent.yaml`:
+
+```yaml
+# Release control
+release: true
+level: auto  # auto, patch, minor, major
+notes: |
+  Release notes content here
+  - Feature 1
+  - Feature 2
+
+# Artifact control
+artifacts:
+  python: auto  # auto, force, skip
+  docker: auto
+  docs:
+    mode: auto
+
+# Project configuration
+project:
+  name: my-project
+  package_name: my_package
+  base_branch: master
+
+# Python package configuration
+python:
+  auth_method: oidc  # oidc or token
+
+# Git configuration
+git:
+  commit:
+    name: GitHub Actions Bot
+    email: actions@github.com
+
+# Docker configuration
+docker:
+  registries:
+    dockerhub: docker.io
+    ghcr: ghcr.io
+  health_check:
+    port: 8000
+    path: /health
+  run_options: "-e API_TOKEN=test_token -p 8000:8000"
+
+# Validation configuration
+validation:
+  version: 1.0.0-validation
+  test_version: validation-test
+
+# Documentation configuration
+docs:
+  paths:
+    ci_cd: docs/CI_CD.md
+    installation: docs/INSTALLATION.md
+    readme: README.md
+  preview:
+    branch: docs-preview
+```
+
+## Workflow Configuration Examples
+
+### Basic CI Workflow
+
+```yaml
+# .github/workflows/ci.yaml
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+### Complete CI/CD Workflow
+
+```yaml
+# .github/workflows/ci-cd.yaml
+name: CI/CD
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/__pkg_info__.py'
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  # Parse configuration
+  parse-config:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_project_config.yaml@master
+    with:
+      config-path: .github/tag_and_release/intent.yaml
+
+  # Run tests
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+
+  # Organize coverage
+  coverage:
+    needs: test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: unit-test
+
+  # Upload coverage
+  upload-coverage:
+    needs: coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codecov: true
+      codecov_flags: unittests
+      codecov_name: my-project
+
+  # Check deployment state
+  check-deployment:
+    needs: [test, parse-config]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_checking_deployment_state.yaml@master
+    with:
+      library-name: my-package
+      library-source-code-path: ./src/my_package
+
+  # Deploy to PyPI
+  deploy:
+    needs: check-deployment
+    if: needs.check-deployment.outputs.version_update_state == 'VERSION UPDATE'
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_push_pypi.yaml@master
+    secrets:
+      PyPI_user: ${{ secrets.PYPI_USERNAME }}
+      PyPI_token: ${{ secrets.PYPI_TOKEN }}
+    with:
+      build-type: poetry
+      release-type: Official-Release
+      push-to-PyPI: official
+```
+
+### Multi-Version Testing
+
+```yaml
+# .github/workflows/test-multi-version.yaml
+name: Multi-Version Tests
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test_with_multi_py_versions.yaml@master
+    with:
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+## PyTest Configuration
+
+Create a `pytest.ini` or configure in `pyproject.toml`:
+
+### pytest.ini
+
+```ini
+[pytest]
+testpaths = test
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts = 
+    --verbose
+    --cov=src
+    --cov-report=xml
+    --cov-report=term-missing
+```
+
+### pyproject.toml (Poetry)
+
+```toml
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "--verbose",
+    "--cov=src",
+    "--cov-report=xml",
+    "--cov-report=term-missing"
+]
+```
+
+## SonarQube Configuration
+
+Create `sonar-project.properties` in your repository root:
+
+```properties
+sonar.projectKey=your-org_your-project
+sonar.organization=your-org
+
+# Paths
+sonar.sources=src
+sonar.tests=test
+sonar.python.coverage.reportPaths=coverage.xml
+
+# Exclusions
+sonar.exclusions=**/__pycache__/**,**/.pytest_cache/**,**/test/**
+sonar.test.exclusions=**/test/**
+
+# Python version
+sonar.python.version=3.11
+```
+
+## Docker Configuration
+
+### Dockerfile Example
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+
+CMD ["python", "-m", "src.your_package"]
+```
+
+### Health Check Endpoint
+
+For Docker workflows with health checks:
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+```
+
+## Environment-Specific Configuration
+
+### Development
+
+```yaml
+# .github/workflows/dev.yaml
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  test:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+      debug_mode: true
+```
+
+### Production
+
+```yaml
+# .github/workflows/prod.yaml
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/__pkg_info__.py'
+
+jobs:
+  deploy:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_push_pypi.yaml@v1.0.0
+    secrets:
+      PyPI_user: ${{ secrets.PYPI_USERNAME }}
+      PyPI_token: ${{ secrets.PYPI_TOKEN }}
+    with:
+      build-type: poetry
+      release-type: Official-Release
+      push-to-PyPI: official
+```
+
+## Best Practices
+
+1. **Version Pinning**: Use specific workflow versions in production
+2. **Secrets Management**: Never commit secrets, use GitHub Secrets
+3. **Branch Protection**: Require status checks before merging
+4. **Test Coverage**: Set minimum coverage thresholds
+5. **Documentation**: Keep workflow files well-commented
+6. **Modular Workflows**: Separate CI and CD concerns
+7. **Environment Variables**: Use repository variables for non-sensitive config
+
+## Troubleshooting
+
+### Workflow Not Triggering
+
+- Check trigger conditions (`on:` section)
+- Verify branch names match
+- Ensure workflow file is in `.github/workflows/`
+- Check file syntax with YAML validator
+
+### Permission Errors
+
+- Review repository settings → Actions → General
+- Enable workflow permissions
+- Check if organization policies restrict actions
+
+### Secret Not Found
+
+- Verify secret name matches exactly (case-sensitive)
+- Check secret is added at repository level
+- Ensure secret is accessible to workflows
+
+## Next Steps
+
+- Review [Workflow Reference](../workflows/index.mdx) for detailed workflow documentation
+- Check [Quick Start](../quick-start/index.mdx) for getting started guide
+- See [Examples](./examples.mdx) for common workflow patterns

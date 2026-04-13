@@ -70,6 +70,9 @@ docs:
   
   preview:
     branch: "docs-preview"         # Branch for documentation previews
+  
+  # Validation configuration
+  check_dir: "docs"               # Directory to check in build output (default: docs)
 
 # === CONFIGURATION EXAMPLES ===
 #
@@ -77,7 +80,7 @@ docs:
 #    release: true
 #    level: auto
 #
-# 2. Custom project settings:
+# 2. Custom project settings (single-project):
 #    project:
 #      name: "My Custom Project"
 #      package_name: "my_custom_package"
@@ -102,7 +105,7 @@ docs:
 #      run_options: "-e API_KEY=test123 -e DB_HOST=localhost -v /tmp:/app/tmp --network mynet"
 #      # Multiple environment variables, volume mounts, custom networks, etc.
 #
-# 4. Documentation versioning examples:
+# 6. Documentation versioning examples:
 #    # Legacy format (backward compatible):
 #    artifacts:
 #      docs: auto
@@ -124,3 +127,93 @@ docs:
 #    # Skip docs versioning entirely:
 #    artifacts:
 #      docs: skip
+#
+# === MONOREPO CONFIGURATION ===
+#
+# For monorepo projects, use 'packages' instead of 'project'
+# Note: You cannot use both 'project' and 'packages' - choose one based on your repository structure
+#
+# 7. Simple monorepo configuration:
+#    packages:
+#      - name: core
+#        working_directory: ./packages/core
+#      
+#      - name: utils
+#        working_directory: ./packages/utils
+#    
+#    defaults:
+#      git:
+#        commit:
+#          name: "GitHub Actions Bot"
+#          email: "actions@github.com"
+#      python:
+#        auth_method: oidc
+#
+# 8. Monorepo with per-package overrides:
+#    packages:
+#      - name: api
+#        working_directory: ./services/api
+#        tag_prefix: api/              # Git tags: api/v1.0.0
+#        python:
+#          auth_method: token          # Override: uses token instead of oidc
+#        docker:
+#          health_check:
+#            port: 8080
+#          run_options: "-e API_KEY=secret -e DEBUG=true"
+#      
+#      - name: worker
+#        working_directory: ./services/worker
+#        tag_prefix: worker/           # Git tags: worker/v1.0.0
+#        docker:
+#          health_check:
+#            port: 9090
+#          run_options: "-e WORKER_QUEUE=redis"
+#      
+#      - name: admin
+#        working_directory: ./services/admin
+#        # Uses all defaults
+#    
+#    defaults:
+#      git:
+#        commit:
+#          name: "CI Bot"
+#          email: "ci@company.com"
+#      python:
+#        auth_method: oidc
+#      docker:
+#        registries:
+#          dockerhub: docker.io
+#          ghcr: ghcr.io
+#        health_check:
+#          port: 8000
+#          path: "/health"
+#        run_options: "-e DEFAULT_VAR=value"
+#
+# 9. Using monorepo configuration in workflows:
+#    # Release a specific package using tag-based detection:
+#    # 1. Tag your release with package prefix:
+#    #    git tag core/v1.0.0
+#    #    git push origin core/v1.0.0
+#    #
+#    # 2. The workflow will automatically:
+#    #    - Parse the tag to extract package name (core)
+#    #    - Load configuration for that package from intent.yaml
+#    #    - Build/release only that package
+#    #
+#    # Or manually specify package in workflow:
+#    # jobs:
+#    #   config:
+#    #     uses: ./.github/workflows/rw_parse_project_config.yaml
+#    #     with:
+#    #       package-name: core
+#
+# 10. Monorepo vs Single-Project decision guide:
+#     Use 'packages' (monorepo) when:
+#     - Multiple packages in one repository
+#     - Each package has independent versioning
+#     - Per-package configuration needed
+#     
+#     Use 'project' (single-project) when:
+#     - One package in the repository
+#     - Simple configuration needs
+#     - Current default behavior is sufficient

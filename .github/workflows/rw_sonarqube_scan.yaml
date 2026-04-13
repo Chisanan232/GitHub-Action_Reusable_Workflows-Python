@@ -27,6 +27,21 @@ on:
         required: false
         type: string
         default: all-test
+      project_name:
+        description: "Project identifier for monorepo (filters coverage artifacts by project). Leave empty for single-project repos."
+        type: string
+        required: false
+        default: ''
+      project_working_directory:
+        description: "Working directory for the project to scan. For monorepo, specify the package directory."
+        type: string
+        required: false
+        default: './'
+      sonar_project_key:
+        description: "SonarQube project key (required for multi-project monorepo). Leave empty to use default from sonar-project.properties."
+        type: string
+        required: false
+        default: ''
       download_path:
         description: "The path to download testing coverage reports via 'actions/download-artifact@v3'."
         type: string
@@ -48,18 +63,21 @@ jobs:
   upload_test_cov_report:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Download code coverage result files which has be handled by different test type process
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
-          name: ${{ inputs.test_type }}_coverage_xml_report
-          path: ${{ inputs.download_path }}
+          name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
+          path: ${{ inputs.project_working_directory }}${{ inputs.download_path }}
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5.1.0
+        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        with:
+          projectBaseDir: ${{ inputs.project_working_directory }}
+          args: ${{ inputs.sonar_project_key != '' && format('-Dsonar.projectKey={0}', inputs.sonar_project_key) || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.sonar_token }}

@@ -4,9 +4,24 @@ description: 'Simple and maintainable git tag and GitHub release creation'
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package name for monorepo (loads configuration from intent.yaml)'
+        required: false
+        default: ''
+        type: string
       version:
         description: 'Version to tag and release'
         required: true
+        type: string
+      tag_prefix:
+        description: 'Prefix for git tags in monorepo (e.g., "core/" for tag "core/v1.2.3"). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
+      working_directory:
+        description: 'Working directory containing release files (for monorepo). Default: ./'
+        required: false
+        default: './'
         type: string
       checkout-sha:
         description: 'Specific commit SHA to checkout (for post-version-bump code)'
@@ -33,8 +48,18 @@ on:
         value: ${{ jobs.create_release.outputs.release_url }}
 
 jobs:
+  # Load package configuration from intent.yaml if package-name is provided
+  config:
+    name: Load Package Configuration
+    if: ${{ inputs.package-name != '' }}
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
+
   create_release:
     name: Create Git Tag and GitHub Release
+    needs: [config]
+    if: always()  # Run even if config job is skipped
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -42,7 +67,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
@@ -50,28 +75,39 @@ jobs:
 
       - name: Check if release files exist
         id: check_files
+        env:
+          WORK_DIR: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working_directory }}
         run: |
-          if [[ ! -f ".github/tag_and_release/release-title.md" ]]; then
-            echo "❌ Missing release-title.md file"
+          RELEASE_DIR="${WORK_DIR}/.github/tag_and_release"
+          
+          echo "📁 Checking release files in: $RELEASE_DIR"
+          
+          if [[ ! -f "${RELEASE_DIR}/release-title.md" ]]; then
+            echo "❌ Missing release-title.md file at: ${RELEASE_DIR}/release-title.md"
             exit 1
           fi
           
-          if [[ ! -f ".github/tag_and_release/release-notes.md" ]]; then
-            echo "❌ Missing release-notes.md file"
+          if [[ ! -f "${RELEASE_DIR}/release-notes.md" ]]; then
+            echo "❌ Missing release-notes.md file at: ${RELEASE_DIR}/release-notes.md"
             exit 1
           fi
           
-          echo "✅ Release files found"
+          echo "✅ Release files found in $RELEASE_DIR"
+          echo "release_dir=$RELEASE_DIR" >> $GITHUB_OUTPUT
 
       - name: Read release content
         id: content
+        env:
+          RELEASE_DIR: ${{ steps.check_files.outputs.release_dir }}
         run: |
+          echo "📄 Reading release content from: $RELEASE_DIR"
+          
           # Read release title (remove any newlines)
-          TITLE=$(cat .github/tag_and_release/release-title.md | tr -d '\n')
+          TITLE=$(cat ${RELEASE_DIR}/release-title.md | tr -d '\n')
           echo "Release title: $TITLE"
           
           # Read release notes (preserve formatting)
-          NOTES=$(cat .github/tag_and_release/release-notes.md)
+          NOTES=$(cat ${RELEASE_DIR}/release-notes.md)
           
           # Set outputs using GitHub's multiline format
           {
@@ -88,15 +124,23 @@ jobs:
 
       - name: Create git tag
         if: ${{ !inputs.debug_mode }}
+        env:
+          TAG_PREFIX: ${{ inputs.package-name != '' && needs.config.outputs.tag_prefix || inputs.tag_prefix }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
+          # Build full tag name with optional prefix
+          FULL_TAG="${TAG_PREFIX}v${{ inputs.version }}"
+          
+          echo "🏷️  Creating tag: $FULL_TAG"
+          
           # Create and push tag
-          git tag -a "v${{ inputs.version }}" -m "${{ steps.content.outputs.title }}"
+          git tag -a "$FULL_TAG" -m "${{ steps.content.outputs.title }}"
           git push -u origin --tags
           
-          echo "✅ Created and pushed tag: v${{ inputs.version }}"
+          echo "✅ Created and pushed tag: $FULL_TAG"
+          echo "tag=$FULL_TAG" >> $GITHUB_OUTPUT
 #          git push origin "v${{ inputs.version }}"
 
       - name: Create GitHub release
@@ -104,11 +148,18 @@ jobs:
         if: ${{ !inputs.debug_mode }}
         env:
           GITHUB_TOKEN: ${{ secrets.github_auth_token || secrets.GITHUB_TOKEN }}
+          TAG_PREFIX: ${{ inputs.package-name != '' && needs.config.outputs.tag_prefix || inputs.tag_prefix }}
+          RELEASE_DIR: ${{ steps.check_files.outputs.release_dir }}
         run: |
+          # Build full tag name with optional prefix
+          FULL_TAG="${TAG_PREFIX}v${{ inputs.version }}"
+          
+          echo "📦 Creating GitHub release for tag: $FULL_TAG"
+          
           # Create release using GitHub CLI
-          RELEASE_URL=$(gh release create "v${{ inputs.version }}" \
+          RELEASE_URL=$(gh release create "$FULL_TAG" \
             --title "${{ steps.content.outputs.title }}" \
-            --notes-file .github/tag_and_release/release-notes.md \
+            --notes-file "${RELEASE_DIR}/release-notes.md" \
             --target "${{ github.sha }}")
           
           echo "release_created=true" >> $GITHUB_OUTPUT
@@ -117,13 +168,24 @@ jobs:
 
       - name: Debug mode output
         if: ${{ inputs.debug_mode }}
+        env:
+          TAG_PREFIX: ${{ inputs.package-name != '' && needs.config.outputs.tag_prefix || inputs.tag_prefix }}
+          RELEASE_DIR: ${{ steps.check_files.outputs.release_dir }}
+          WORK_DIR: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working_directory }}
         run: |
+          FULL_TAG="${TAG_PREFIX}v${{ inputs.version }}"
+          
           echo "🐛 DEBUG MODE - Would create:"
-          echo "Tag: v${{ inputs.version }}"
+          echo "Package: ${{ inputs.package-name || '(single-project)' }}"
+          echo "Working Directory: $WORK_DIR"
+          echo "Tag: $FULL_TAG"
+          echo "Tag Prefix: ${TAG_PREFIX:-'(none)'}"
           echo "Title: ${{ steps.content.outputs.title }}"
+          echo "Release files: $RELEASE_DIR"
+          echo ""
           echo "Notes preview:"
           echo "---"
-          head -n 10 .github/tag_and_release/release-notes.md
+          head -n 10 "${RELEASE_DIR}/release-notes.md"
           echo "---"
           
           echo "release_created=false" >> $GITHUB_OUTPUT

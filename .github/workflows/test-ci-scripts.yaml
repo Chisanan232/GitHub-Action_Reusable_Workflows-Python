@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  # No matter for push or pull request events, it would trigger CI for safely saving the source code.
+  # For the push event, it only runs building and testing.
+  push:
+    branches:
+      - "master"
+    paths:
+#     For GitHub Action
+      - ".github/workflows/test-ci-scripts.yaml"
+#     For source code and test
+      - "scripts/ci/**/*.py"
+      - "scripts/test/**/*.py"
+#     For configurations for test or CI
+      - "scripts/pytest.ini"
+#     For Python project configuration
+      - "scripts/pyproject.toml"
+      - "scripts/uv.lock"
+
+  # For the push event, in addition to build and test would be run, it would trigger other service to keep the reports
+  # or other checking, i.e., record the test report by CodeCov and check the code quality by SonarQube.
+  pull_request:
+    branches:
+      - "master"
+    paths:
+#     For GitHub Action
+      - ".github/workflows/test-ci-scripts.yaml"
+#     For source code and test
+      - "scripts/ci/**/*.py"
+      - "scripts/test/**/*.py"
+#     For configurations for test or CI
+      - "scripts/pytest.ini"
+#     For Python project configuration
+      - "scripts/pyproject.toml"
+      - "scripts/uv.lock"
+
+jobs:
+  run_script-test:
+#    name: Run all contract test items
+    uses: ./.github/workflows/rw_uv_run_test.yaml
+    with:
+      test_type: ci-script-test
+      test_folder: './test/ci_script_test'
+      python-versions: '["3.13"]'
+      operating-systems: '["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'
+      test_working_directory: './scripts'
+      handle-coverage-report: false

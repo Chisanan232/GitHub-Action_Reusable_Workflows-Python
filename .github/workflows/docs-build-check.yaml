@@ -1,0 +1,101 @@
+name: Documentation (Docusaurus) Build Check
+
+on:
+  pull_request:
+    paths:
+      # Documentation CI workflow
+      - ".github/workflows/docs-build-check.yaml"
+      - ".github/workflows/documentation.yaml"
+      - ".github/workflows/rw_docusaurus_operations.yaml"
+      # Documentation dependencies
+      - "docs/package.json"
+      - "docs/pnpm-lock.yaml"
+      # Docusaurus configuration
+      - "docs/docusaurus.config.ts"
+      - "docs/tsconfig.json"
+      # Documentation content
+      - "docs/**/*.md"
+      - "docs/**/*.mdx"
+      - "docs/**/*.ts"
+      - "docs/**/*.tsx"
+      - "docs/**/*.js"
+      - "docs/**/*.jsx"
+      - "docs/**/*.css"
+      - "docs/**/*.json"
+      # Docusaurus versioning
+      - "docs/*_versions.json"
+      - "docs/*_versioned_docs/**"
+      - "docs/*_versioned_sidebars/**"
+      # Static assets
+      - "docs/static/**"
+      - "docs/src/**"
+
+permissions:
+  contents: read
+
+# Allow cancelling in-progress runs for the same PR/branch
+concurrency:
+  group: docs-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test_docs:
+    name: Build & Test Documentation
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
+    with:
+      operation: test
+      node-version: '22'
+      working-directory: docs
+      upload-artifacts: true
+
+  validate_build:
+    name: Validate Build Quality
+    needs: build_and_test_docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: documentation-build
+          path: docs/build
+
+      - name: Validate build quality
+        run: |
+          cd docs/build
+          
+          # Count HTML files
+          HTML_COUNT=$(find . -name "*.html" | wc -l)
+          echo "🔍 HTML files generated: $HTML_COUNT"
+          
+          if [ "$HTML_COUNT" -lt 5 ]; then
+            echo "⚠️  Warning: Very few HTML files generated ($HTML_COUNT)"
+            echo "This might indicate a build issue"
+          fi
+          
+          # Check for critical files
+          CRITICAL_FILES=("index.html" "404.html")
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ Critical file found: $file"
+            else
+              echo "⚠️  Critical file missing: $file"
+            fi
+          done
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## 📚 Documentation Build Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -d "docs/build" ]; then
+            BUILD_SIZE=$(du -sh docs/build | cut -f1)
+            FILE_COUNT=$(find docs/build -type f | wc -l)
+            HTML_COUNT=$(find docs/build -name "*.html" | wc -l)
+            
+            echo "✅ **Build Status**: Success" >> $GITHUB_STEP_SUMMARY
+            echo "📁 **Build Size**: $BUILD_SIZE" >> $GITHUB_STEP_SUMMARY
+            echo "📄 **Total Files**: $FILE_COUNT" >> $GITHUB_STEP_SUMMARY
+            echo "🌐 **HTML Pages**: $HTML_COUNT" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build Status**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "The documentation build did not complete successfully." >> $GITHUB_STEP_SUMMARY
+          fi

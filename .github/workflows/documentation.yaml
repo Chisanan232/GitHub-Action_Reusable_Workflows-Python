@@ -1,0 +1,133 @@
+name: documentation
+
+on:
+  push:
+    branches:
+#      - "develop/**"    # For development and testing
+      - "master"
+    paths:
+#     Documentation
+#     Doc - CI workflow
+      - ".github/workflows/documentation.yaml"
+      - ".github/workflows/rw_docusaurus_operations.yaml"
+      - "scripts/ci/**documentation**.sh"
+#     Doc - Font-End config
+      - "docs/package.json"
+      - "docs/pnpm-lock.yaml"
+#     Doc - Docusaurus config
+      - "docs/docusaurus.config.ts"
+#     Doc - Content
+      - "docs/**/*.md"
+      - "docs/**/*.mdx"
+      - "docs/**/*.ts"
+      - "docs/**/*.tsx"
+      - "docs/**/*.js"
+      - "docs/**/*.jsx"
+      - "docs/**/*.css"
+#     Doc - versioning (Docusaurus versioned content)
+      - "docs/*_versions.json"
+      - "docs/*_versioned_docs/**"
+      - "docs/*_versioned_sidebars/**"
+  workflow_run:
+    workflows: ["release"]
+    types: [completed]
+    branches: ["master"]
+
+permissions:
+  contents: write
+  id-token: write
+  pages: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Guard job: Check if documentation files changed and if release workflow succeeded
+  check_docs_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check_changes.outputs.should_deploy || steps.set_push_deploy.outputs.should_deploy }}
+    steps:
+      - name: Set deployment flag for push events
+        id: set_push_deploy
+        if: github.event_name == 'push'
+        run: |
+          echo "Direct push event detected, proceeding with deployment"
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+      - name: Download docs update flag from release workflow
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          name: release-docs-flag
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Check release workflow success and docs update flag
+        id: check_changes
+        if: github.event_name == 'workflow_run'
+        run: |
+          set -euo pipefail
+          
+          # Verify release workflow succeeded
+          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
+            echo "Release workflow failed, skipping documentation deployment"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Read docs update flag from artifact
+          DOCS_UPDATED=$(cat docs_updated.txt)
+          
+          echo "Documentation updated flag: $DOCS_UPDATED"
+          
+          if [[ "$DOCS_UPDATED" == "true" ]]; then
+            echo "Documentation was updated during release, proceeding with deployment"
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "No documentation files were updated, skipping deployment"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+  build_documentation:
+    name: Build Documentation
+    if: needs.check_docs_changes.outputs.should_deploy == 'true'
+    needs: [check_docs_changes]
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
+    with:
+      operation: build
+      node-version: '22'
+      working-directory: docs
+      upload-artifacts: true
+
+  deploy_to_github_pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    if: needs.check_docs_changes.outputs.should_deploy == 'true'
+    needs: [check_docs_changes, build_documentation]
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: documentation-build
+          path: ./docs/build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./docs/build
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Deployment summary
+        run: |
+          echo "## 📚 Documentation Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY

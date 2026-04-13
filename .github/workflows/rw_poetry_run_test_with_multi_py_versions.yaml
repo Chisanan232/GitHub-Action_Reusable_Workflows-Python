@@ -35,6 +35,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         required: true
         type: string
+      project_name:
+        description: "Project identifier for monorepo support (used in artifact naming). Leave empty for single-project repos."
+        type: string
+        required: false
+        default: ''
       test_working_directory:
         description: "The working directory for test running."
         required: false
@@ -92,6 +97,7 @@ jobs:
       runtime_os: ${{ matrix.os }}
       python_version: ${{ matrix.python-version }}
       test_type: ${{ inputs.test_type }}
+      project_name: ${{ inputs.project_name }}
       test_working_directory: ${{ inputs.test_working_directory }}
       install_dependency_with_group: ${{ inputs.install_dependency_with_group }}
       all_test_items_paths: ${{ inputs.all_test_items_paths }}

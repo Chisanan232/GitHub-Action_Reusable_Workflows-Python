@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: 'setuptools'
+      package_working_directory:
+        description: "Working directory containing the package to publish (where pyproject.toml or setup.py is located)"
+        type: string
+        required: false
+        default: './'
       run_with_python_version:
         description: "The Python version you want to use in this workflow."
         type: string
@@ -61,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Python ${{ inputs.run_with_python_version }} in Ubuntu OS
         uses: actions/setup-python@v6
@@ -87,10 +92,12 @@ jobs:
 
       - name: Compile and package the code as Python package formatter
         if: ${{ inputs.build-type == 'setuptools' }}
+        working-directory: ${{ inputs.package_working_directory }}
         run: python3 setup.py sdist bdist_wheel
 
       - name: Push Python package to test PyPI through setuptools
         if: ${{ inputs.build-type == 'setuptools' && inputs.push-to-PyPI == 'test' }}
+        working-directory: ${{ inputs.package_working_directory }}
         run: python3 -m twine upload --repository testpypi ./dist/*
         env:
           TWINE_USERNAME: ${{ secrets.PyPI_user }}
@@ -98,6 +105,7 @@ jobs:
 
       - name: Push Python package to official PyPI through setuptools
         if: ${{ inputs.build-type == 'setuptools' && inputs.push-to-PyPI == 'official' }}
+        working-directory: ${{ inputs.package_working_directory }}
         run: python3 -m twine upload ./dist/*
         env:
           TWINE_USERNAME: ${{ secrets.PyPI_user }}
@@ -105,6 +113,7 @@ jobs:
 
       - name: Push Python package to test PyPI through Poetry
         if: ${{ inputs.build-type == 'poetry' && inputs.push-to-PyPI == 'test' }}
+        working-directory: ${{ inputs.package_working_directory }}
         run: |
           poetry config pypi-token.pypi ${{ secrets.PyPI_token }}
           poetry config repositories.testpypi https://test.pypi.org/legacy/
@@ -112,6 +121,7 @@ jobs:
 
       - name: Push Python package to official PyPI through Poetry
         if: ${{ inputs.build-type == 'poetry' && inputs.push-to-PyPI == 'official' }}
+        working-directory: ${{ inputs.package_working_directory }}
         run: |
           poetry config pypi-token.pypi ${{ secrets.PyPI_token }}
           poetry publish --build -vvv

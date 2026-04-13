@@ -1,0 +1,392 @@
+# Monorepo Release Orchestrator
+#
+# This workflow orchestrates releases for multiple packages in a monorepo.
+# It can automatically detect changed packages or release specific packages.
+#
+# Features:
+# - Automatic change detection via git diff
+# - Parallel or sequential package releases
+# - Multi-stage support: production, staging, validation
+# - Intent.yaml configuration integration
+# - Package dependency management (future)
+#
+# Permissions:
+# - contents: write - Required for creating tags and releases
+# - packages: write - Required for publishing packages
+# - id-token: write - Required for OIDC authentication
+#
+# Usage:
+#   1. Manual trigger: Select packages to release
+#   2. Scheduled: Detect and release changed packages
+#   3. PR merge: Release packages modified in PR
+#   4. Stage selection: Choose production, staging, or validation workflow
+
+name: Monorepo Release Orchestrator
+
+on:
+  workflow_call:
+    inputs:
+      packages:
+        description: 'JSON array of package names to release (e.g., ["core", "utils"]). Leave empty to auto-detect.'
+        required: false
+        default: '[]'
+        type: string
+      base-ref:
+        description: 'Base reference for change detection (default: main branch)'
+        required: false
+        default: ''
+        type: string
+      release-mode:
+        description: 'Release mode: parallel or sequential'
+        required: false
+        default: 'sequential'
+        type: string
+      release-stage:
+        description: 'Release stage: production, staging, or validation'
+        required: false
+        default: 'production'
+        type: string
+      level:
+        description: 'Release level (auto, patch, minor, major)'
+        required: false
+        default: 'auto'
+        type: string
+      python:
+        description: 'Python package release (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      docker:
+        description: 'Docker image release (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      docs:
+        description: 'Documentation versioning (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      notes:
+        description: 'Release notes'
+        required: false
+        default: ''
+        type: string
+      dry-run:
+        description: 'Dry run mode - show what would be released without actually releasing'
+        required: false
+        default: false
+        type: boolean
+    
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: 'DockerHub username'
+        required: false
+      DOCKERHUB_TOKEN:
+        description: 'DockerHub access token'
+        required: false
+      PYPI_API_TOKEN:
+        description: 'PyPI API token (required for token-based authentication)'
+        required: false
+      TEST_PYPI_API_TOKEN:
+        description: 'Test PyPI API token (required for token-based authentication)'
+        required: false
+    
+    outputs:
+      packages-released:
+        description: 'JSON array of packages that were released'
+        value: ${{ jobs.summarize.outputs.packages_released }}
+      release-count:
+        description: 'Number of packages released'
+        value: ${{ jobs.summarize.outputs.release_count }}
+      all-successful:
+        description: 'Whether all releases succeeded'
+        value: ${{ jobs.summarize.outputs.all_successful }}
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  # Step 1: Load monorepo configuration
+  load-config:
+    name: Load Monorepo Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      packages_json: ${{ steps.parse.outputs.packages_json }}
+      packages_count: ${{ steps.parse.outputs.packages_count }}
+      is_monorepo: ${{ steps.parse.outputs.is_monorepo }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Full history for change detection
+
+      - name: Parse intent.yaml for packages
+        id: parse
+        run: |
+          echo "📋 Parsing intent.yaml for package definitions..."
+          
+          CONFIG_FILE=".github/tag_and_release/intent.yaml"
+          
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "❌ Error: $CONFIG_FILE not found"
+            exit 1
+          fi
+          
+          # Check if packages array exists
+          if ! grep -q "^packages:" "$CONFIG_FILE"; then
+            echo "⚠️ No packages array found in intent.yaml - not a monorepo"
+            echo "is_monorepo=false" >> $GITHUB_OUTPUT
+            echo "packages_json=[]" >> $GITHUB_OUTPUT
+            echo "packages_count=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Extract package names using yq
+          PACKAGES=$(yq eval '.packages[].name' "$CONFIG_FILE" | jq -R -s -c 'split("\n")[:-1]')
+          COUNT=$(echo "$PACKAGES" | jq 'length')
+          
+          echo "is_monorepo=true" >> $GITHUB_OUTPUT
+          echo "packages_json=$PACKAGES" >> $GITHUB_OUTPUT
+          echo "packages_count=$COUNT" >> $GITHUB_OUTPUT
+          
+          echo "✅ Found $COUNT packages in monorepo:"
+          echo "$PACKAGES" | jq -r '.[]' | sed 's/^/  - /'
+
+  # Step 2: Detect changed packages (if auto-detection enabled)
+  detect-changes:
+    name: Detect Changed Packages
+    needs: [load-config]
+    if: ${{ needs.load-config.outputs.is_monorepo == 'true' && inputs.packages == '[]' }}
+    runs-on: ubuntu-latest
+    outputs:
+      changed_packages: ${{ steps.detect.outputs.changed_packages }}
+      changed_count: ${{ steps.detect.outputs.changed_count }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed packages
+        id: detect
+        env:
+          ALL_PACKAGES: ${{ needs.load-config.outputs.packages_json }}
+          BASE_REF: ${{ inputs.base-ref || github.event.repository.default_branch }}
+        run: |
+          echo "🔍 Detecting changed packages since $BASE_REF..."
+          
+          CHANGED=()
+          
+          # For each package, check if it has changes
+          for package in $(echo "$ALL_PACKAGES" | jq -r '.[]'); do
+            # Get working directory for package
+            WORK_DIR=$(yq eval ".packages[] | select(.name == \"$package\") | .working_directory" .github/tag_and_release/intent.yaml)
+            
+            if [ -z "$WORK_DIR" ] || [ "$WORK_DIR" = "null" ]; then
+              echo "⚠️ No working_directory for package '$package', skipping"
+              continue
+            fi
+            
+            # Check for changes in package directory
+            if git diff --quiet "$BASE_REF" HEAD -- "$WORK_DIR"; then
+              echo "  ⏭️  $package - No changes"
+            else
+              echo "  ✅ $package - Has changes in $WORK_DIR"
+              CHANGED+=("$package")
+            fi
+          done
+          
+          # Convert to JSON array
+          CHANGED_JSON=$(printf '%s\n' "${CHANGED[@]}" | jq -R -s -c 'split("\n")[:-1]')
+          CHANGED_COUNT=${#CHANGED[@]}
+          
+          echo "changed_packages=$CHANGED_JSON" >> $GITHUB_OUTPUT
+          echo "changed_count=$CHANGED_COUNT" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "📊 Change detection summary:"
+          echo "  Total packages: $(echo "$ALL_PACKAGES" | jq 'length')"
+          echo "  Changed packages: $CHANGED_COUNT"
+          if [ $CHANGED_COUNT -gt 0 ]; then
+            echo "  Packages to release:"
+            echo "$CHANGED_JSON" | jq -r '.[]' | sed 's/^/    - /'
+          fi
+
+  # Step 3: Determine release list
+  prepare-releases:
+    name: Prepare Release List
+    needs: [load-config, detect-changes]
+    if: always() && needs.load-config.outputs.is_monorepo == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      release_packages: ${{ steps.prepare.outputs.release_packages }}
+      release_count: ${{ steps.prepare.outputs.release_count }}
+    steps:
+      - name: Prepare release package list
+        id: prepare
+        env:
+          INPUT_PACKAGES: ${{ inputs.packages }}
+          CHANGED_PACKAGES: ${{ needs.detect-changes.outputs.changed_packages || '[]' }}
+        run: |
+          echo "🎯 Determining which packages to release..."
+          
+          if [ "$INPUT_PACKAGES" != "[]" ]; then
+            # Use explicitly provided packages
+            RELEASE_PACKAGES="$INPUT_PACKAGES"
+            echo "  Mode: Manual selection"
+          else
+            # Use auto-detected changed packages
+            RELEASE_PACKAGES="$CHANGED_PACKAGES"
+            echo "  Mode: Auto-detection"
+          fi
+          
+          COUNT=$(echo "$RELEASE_PACKAGES" | jq 'length')
+          
+          echo "release_packages=$RELEASE_PACKAGES" >> $GITHUB_OUTPUT
+          echo "release_count=$COUNT" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "📦 Packages to release ($COUNT):"
+          if [ $COUNT -gt 0 ]; then
+            echo "$RELEASE_PACKAGES" | jq -r '.[]' | sed 's/^/  - /'
+          else
+            echo "  (none)"
+          fi
+
+  # Step 4a: Production Release
+  release-packages-production:
+    name: Release ${{ matrix.package }} (Production)
+    needs: [prepare-releases]
+    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run && inputs.release-stage == 'production' }}
+    strategy:
+      max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare-releases.outputs.release_packages) }}
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_complete.yaml@master
+    with:
+      package-name: ${{ matrix.package }}
+      level: ${{ inputs.level }}
+      python: ${{ inputs.python }}
+      docker: ${{ inputs.docker }}
+      docs: ${{ inputs.docs }}
+      notes: ${{ inputs.notes }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+  # Step 4b: Staging Release
+  release-packages-staging:
+    name: Release ${{ matrix.package }} (Staging)
+    needs: [prepare-releases]
+    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run && inputs.release-stage == 'staging' }}
+    strategy:
+      max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare-releases.outputs.release_packages) }}
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_staging_complete.yaml@master
+    with:
+      package-name: ${{ matrix.package }}
+      level: ${{ inputs.level }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+  # Step 4c: Validation Release
+  release-packages-validation:
+    name: Validate ${{ matrix.package }}
+    needs: [prepare-releases]
+    if: ${{ needs.prepare-releases.outputs.release_count > 0 && !inputs.dry-run && inputs.release-stage == 'validation' }}
+    strategy:
+      max-parallel: ${{ inputs.release-mode == 'sequential' && 1 || 10 }}
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare-releases.outputs.release_packages) }}
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_release_validation_complete.yaml@master
+    with:
+      package-name: ${{ matrix.package }}
+      level: ${{ inputs.level }}
+      python: ${{ inputs.python }}
+      docker: ${{ inputs.docker }}
+      docs: ${{ inputs.docs }}
+
+  # Step 5: Summarize results
+  summarize:
+    name: Release Summary
+    needs: [prepare-releases, release-packages-production, release-packages-staging, release-packages-validation]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      packages_released: ${{ needs.prepare-releases.outputs.release_packages }}
+      release_count: ${{ needs.prepare-releases.outputs.release_count }}
+      all_successful: ${{ steps.check.outputs.all_successful }}
+    steps:
+      - name: Check release results
+        id: check
+        env:
+          RELEASE_COUNT: ${{ needs.prepare-releases.outputs.release_count }}
+          RELEASE_PACKAGES: ${{ needs.prepare-releases.outputs.release_packages }}
+          RELEASE_STAGE: ${{ inputs.release-stage }}
+          DRY_RUN: ${{ inputs.dry-run }}
+          PRODUCTION_RESULT: ${{ needs.release-packages-production.result }}
+          STAGING_RESULT: ${{ needs.release-packages-staging.result }}
+          VALIDATION_RESULT: ${{ needs.release-packages-validation.result }}
+        run: |
+          echo "## Monorepo Release Orchestrator Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🔍 **Mode**: Dry Run (no actual releases)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚀 **Mode**: Live Release" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "🎯 **Stage**: $RELEASE_STAGE" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Packages to release**: $RELEASE_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$RELEASE_COUNT" -gt 0 ]; then
+            echo "**Package List**:" >> $GITHUB_STEP_SUMMARY
+            echo "$RELEASE_PACKAGES" | jq -r '.[]' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$DRY_RUN" = "false" ]; then
+              # Determine which job result to check based on stage
+              case "$RELEASE_STAGE" in
+                production)
+                  RESULT="$PRODUCTION_RESULT"
+                  ;;
+                staging)
+                  RESULT="$STAGING_RESULT"
+                  ;;
+                validation)
+                  RESULT="$VALIDATION_RESULT"
+                  ;;
+                *)
+                  RESULT="skipped"
+                  ;;
+              esac
+              
+              # Check if all releases succeeded
+              if [ "$RESULT" = "success" ]; then
+                echo "✅ All package releases completed successfully!" >> $GITHUB_STEP_SUMMARY
+                echo "all_successful=true" >> $GITHUB_OUTPUT
+              else
+                echo "⚠️ Some package releases may have failed. Check individual job results." >> $GITHUB_STEP_SUMMARY
+                echo "all_successful=false" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "ℹ️ Dry run completed - no actual releases performed" >> $GITHUB_STEP_SUMMARY
+              echo "all_successful=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "ℹ️ No packages need to be released" >> $GITHUB_STEP_SUMMARY
+            echo "all_successful=true" >> $GITHUB_OUTPUT
+          fi

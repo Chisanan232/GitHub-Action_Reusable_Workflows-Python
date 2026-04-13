@@ -49,6 +49,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         required: true
         type: string
+      project_name:
+        description: "Project identifier for monorepo support (used in artifact naming). Leave empty for single-project repos."
+        type: string
+        required: false
+        default: ''
       test_working_directory:
         description: "The working directory for test running."
         required: false
@@ -114,7 +119,7 @@ jobs:
         test-path: ${{fromJson(inputs.all_test_items_paths)}}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install Python ${{ inputs.python_version }}
         uses: actions/setup-python@v6
@@ -167,9 +172,9 @@ jobs:
           mv ./.coverage ./.coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
 
       - name: Upload code coverage result file
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: coverage_${{ inputs.test_type }}_${{ inputs.runtime_os }}_${{ inputs.python_version }}
+          name: ${{ inputs.project_name != '' && format('coverage_{0}_{1}_{2}_{3}', inputs.project_name, inputs.test_type, inputs.runtime_os, inputs.python_version) || format('coverage_{0}_{1}_{2}', inputs.test_type, inputs.runtime_os, inputs.python_version) }}
           path: ${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ inputs.runtime_os }}-${{ inputs.python_version }}
           if-no-files-found: error
           include-hidden-files: true

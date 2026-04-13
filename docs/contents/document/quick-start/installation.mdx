@@ -1,0 +1,178 @@
+---
+id: installation
+title: Installation
+sidebar_position: 2
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
+# Installation
+
+This guide provides step-by-step instructions for integrating GitHub Action Reusable Workflows into your Python project.
+
+## Prerequisites
+
+Before installation, make sure you've met all the [requirements](./requirements.mdx).
+
+## Understanding Reusable Workflows
+
+Unlike traditional packages, reusable workflows don't require installation in your project. Instead, you reference them directly in your GitHub Actions workflow files using the `uses` keyword.
+
+## Step 1: Create Workflow Directory
+
+Create a `.github/workflows` directory in your repository if it doesn't exist:
+
+```bash
+mkdir -p .github/workflows
+```
+
+## Step 2: Create Your First Workflow
+
+Create a new workflow file (e.g., `.github/workflows/ci.yaml`) in your repository:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: Run Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+## Step 3: Reference Workflows
+
+To use a reusable workflow, reference it with the `uses` keyword:
+
+```yaml
+uses: {owner}/{repo}/.github/workflows/{workflow-file}@{ref}
+```
+
+Where:
+- `{owner}`: Repository owner (e.g., `Chisanan232`)
+- `{repo}`: Repository name (e.g., `GitHub-Action_Reusable_Workflows-Python`)
+- `{workflow-file}`: Workflow filename (e.g., `rw_run_test.yaml`)
+- `{ref}`: Git reference - branch, tag, or commit SHA (e.g., `master`, `v1.0.0`)
+
+## Step 4: Choose Your Version Reference
+
+<Tabs>
+  <TabItem value="branch" label="Branch (Latest)" default>
+  ```yaml
+  uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+  ```
+  
+  **Pros**: Always get the latest features and fixes
+  
+  **Cons**: May introduce breaking changes
+  </TabItem>
+  
+  <TabItem value="tag" label="Tag (Stable)">
+  ```yaml
+  uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@v1.0.0
+  ```
+  
+  **Pros**: Stable and predictable behavior
+  
+  **Cons**: Manual updates required for new features
+  </TabItem>
+  
+  <TabItem value="commit" label="Commit SHA (Locked)">
+  ```yaml
+  uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@abc1234
+  ```
+  
+  **Pros**: Completely locked version, maximum stability
+  
+  **Cons**: No automatic updates, even for security fixes
+  </TabItem>
+</Tabs>
+
+## Step 5: Configure Required Secrets
+
+Add necessary secrets to your repository:
+
+1. Go to your repository on GitHub
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add the required secrets based on your workflow needs (see [Requirements](./requirements.mdx))
+
+## Example: Complete CI/CD Setup
+
+Here's a complete example for a Python project with testing and deployment:
+
+```yaml
+name: CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  # Get all test items
+  prepare-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  # Run tests
+  run-tests:
+    needs: prepare-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: ${{ needs.prepare-tests.outputs.all_test_items }}
+
+  # Organize coverage reports
+  coverage:
+    needs: run-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: unit-test
+
+  # Upload to Codecov
+  codecov:
+    needs: coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codecov: true
+      codecov_flags: unittests
+      codecov_name: my-project-tests
+```
+
+## Verifying Setup
+
+After creating your workflow file:
+
+1. Commit and push the workflow file to your repository
+2. Go to the **Actions** tab in your GitHub repository
+3. You should see your workflow listed and running (if triggered by your push)
+4. Click on a workflow run to see detailed logs
+
+:::tip Best Practices
+
+- **Use specific versions** for production workflows (tags or commit SHAs)
+- **Test with branches** in development to get latest features
+- **Document your workflows** with comments explaining each job
+- **Start simple** with basic workflows and add complexity as needed
+- **Review workflow logs** regularly to catch issues early
+
+:::

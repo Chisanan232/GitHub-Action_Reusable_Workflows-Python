@@ -4,6 +4,11 @@ description: 'Build, test, version, and deploy documentation with Docusaurus'
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package name for monorepo (loads configuration from intent.yaml)'
+        required: false
+        default: ''
+        type: string
       operation:
         description: 'Operation to perform: build, test, version, deploy-preview, deploy-production'
         required: true
@@ -58,6 +63,11 @@ on:
         required: false
         default: true
         type: boolean
+      check-dir:
+        description: 'Directory to check for build validation (relative to build output)'
+        required: false
+        default: 'docs'
+        type: string
 
     outputs:
       build-success:
@@ -71,9 +81,18 @@ on:
         value: ${{ jobs.prepare_matrix.outputs.sections_to_version }}
 
 jobs:
+  # Load package configuration from intent.yaml if package-name is provided
+  config:
+    name: Load Package Configuration
+    if: ${{ inputs.package-name != '' }}
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
+
   prepare_matrix:
     name: Prepare versioning matrix
-    if: inputs.operation == 'version'
+    needs: [config]
+    if: always() && inputs.operation == 'version'  # Run for version operation even if config is skipped
     runs-on: ubuntu-latest
     outputs:
       sections_to_version: ${{ steps.matrix.outputs.sections_to_version }}
@@ -122,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
@@ -137,7 +156,7 @@ jobs:
         run: corepack enable
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ inputs.working-directory }}/node_modules
@@ -148,14 +167,14 @@ jobs:
             docs-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working-directory }}
         run: |
           echo "📦 Installing documentation dependencies..."
           pnpm install --frozen-lockfile
           echo "✅ Dependencies installed successfully"
 
       - name: Version documentation sections sequentially
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working-directory }}
         run: |
           echo "🏷️ Versioning documentation sections sequentially to prevent git conflicts..."
           
@@ -205,7 +224,7 @@ jobs:
       deploy_url: ${{ steps.preview.outputs.url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
@@ -220,7 +239,7 @@ jobs:
         run: corepack enable
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ inputs.working-directory }}/node_modules
@@ -231,7 +250,7 @@ jobs:
             docs-${{ runner.os }}-
 
       - name: Install dependencies
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working-directory }}
         run: |
           echo "📦 Installing documentation dependencies..."
           pnpm install --frozen-lockfile
@@ -254,7 +273,7 @@ jobs:
       - name: Build documentation
         if: contains(fromJSON('["build", "test", "deploy-preview", "deploy-production"]'), inputs.operation)
         id: build
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working-directory }}
         run: |
           echo "🔨 Building documentation..."
           pnpm build
@@ -268,7 +287,7 @@ jobs:
 
       - name: Test documentation
         if: inputs.operation == 'test'
-        working-directory: ${{ inputs.working-directory }}
+        working-directory: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || inputs.working-directory }}
         run: |
           echo "🧪 Testing documentation..."
           
@@ -279,8 +298,8 @@ jobs:
           fi
           
           # Test that documentation structure is valid
-          if [ ! -d build/docs ]; then
-            echo "❌ Missing docs directory"
+          if [ ! -d build/${{ inputs.check-dir }} ]; then
+            echo "❌ Missing ${{ inputs.check-dir }} directory"
             exit 1
           fi
           
@@ -294,7 +313,7 @@ jobs:
 
       - name: Upload build artifacts
         if: inputs.upload-artifacts && contains(fromJSON('["build", "test", "deploy-preview", "deploy-production"]'), inputs.operation)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: documentation-build
           path: ${{ inputs.working-directory }}/build/

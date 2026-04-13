@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.com/release-intent.schema.json",
   "title": "Release Intent and Project Configuration",
-  "description": "Validates release intent core properties while allowing additional project configuration sections (project, git, docker, validation, docs) for enhanced workflows",
+  "description": "Validates release intent core properties while allowing additional project configuration sections (project, git, docker, validation, docs) for enhanced workflows. Supports both single-project and monorepo configurations.",
   "type": "object",
   "additionalProperties": true,
   "properties": {
@@ -67,7 +67,186 @@
     "notes": {
       "type": "string",
       "description": "Optional human notes for this release"
+    },
+    "project": {
+      "type": "object",
+      "description": "Single-project configuration (backward compatible). Cannot be used with 'packages'.",
+      "properties": {
+        "name": {
+          "type": ["string", "null"],
+          "description": "Project name (defaults to repository name if not set)"
+        },
+        "package_name": {
+          "type": ["string", "null"],
+          "description": "Python package name (defaults to repository name if not set)"
+        },
+        "base_branch": {
+          "type": "string",
+          "description": "Main/default branch for the project",
+          "default": "master"
+        }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "description": "Monorepo configuration - array of packages. Cannot be used with 'project'.",
+      "items": {
+        "type": "object",
+        "required": ["name", "working_directory"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Package identifier (must be unique within packages array)",
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "package_name": {
+            "type": "string",
+            "description": "Python package name (defaults to name if not set)"
+          },
+          "working_directory": {
+            "type": "string",
+            "description": "Package root directory (e.g., ./packages/core)",
+            "pattern": "^\\./[a-zA-Z0-9_/-]+$"
+          },
+          "base_branch": {
+            "type": "string",
+            "description": "Main branch for this package",
+            "default": "master"
+          },
+          "tag_prefix": {
+            "type": "string",
+            "description": "Git tag prefix (defaults to {name}/ if not set)"
+          },
+          "python": {
+            "type": "object",
+            "description": "Package-specific Python configuration (overrides defaults)",
+            "additionalProperties": true,
+            "properties": {
+              "auth_method": {
+                "type": "string",
+                "enum": ["oidc", "token"],
+                "description": "PyPI authentication method"
+              }
+            }
+          },
+          "docker": {
+            "type": "object",
+            "description": "Package-specific Docker configuration (overrides defaults)",
+            "additionalProperties": true,
+            "properties": {
+              "registries": {
+                "type": "object",
+                "properties": {
+                  "dockerhub": {"type": "string"},
+                  "ghcr": {"type": "string"}
+                }
+              },
+              "health_check": {
+                "type": "object",
+                "properties": {
+                  "port": {"type": "number"},
+                  "path": {"type": "string"}
+                }
+              },
+              "run_options": {"type": "string"}
+            }
+          },
+          "docs": {
+            "type": "object",
+            "description": "Package-specific documentation configuration (overrides defaults)",
+            "additionalProperties": true
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "defaults": {
+      "type": "object",
+      "description": "Default configuration values for all packages in monorepo (only used when packages array exists)",
+      "additionalProperties": true,
+      "properties": {
+        "git": {
+          "type": "object",
+          "properties": {
+            "commit": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "email": {"type": "string"}
+              }
+            }
+          }
+        },
+        "python": {
+          "type": "object",
+          "properties": {
+            "auth_method": {
+              "type": "string",
+              "enum": ["oidc", "token"]
+            }
+          }
+        },
+        "docker": {
+          "type": "object",
+          "properties": {
+            "registries": {
+              "type": "object"
+            },
+            "health_check": {
+              "type": "object"
+            },
+            "run_options": {
+              "type": "string"
+            }
+          }
+        },
+        "validation": {
+          "type": "object"
+        },
+        "docs": {
+          "type": "object"
+        }
+      }
+    },
+    "docs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "check_dir": {
+          "type": "string",
+          "description": "Directory to check for build validation (relative to build output, default: docs)",
+          "default": "docs"
+        }
+      }
     }
   },
+  "oneOf": [
+    {
+      "description": "Single-project mode: uses 'project' object",
+      "required": [],
+      "properties": {
+        "project": {}
+      },
+      "not": {
+        "required": ["packages"]
+      }
+    },
+    {
+      "description": "Monorepo mode: uses 'packages' array",
+      "required": ["packages"],
+      "not": {
+        "required": ["project"]
+      }
+    },
+    {
+      "description": "Neither mode: no project or packages defined (uses all defaults)",
+      "not": {
+        "anyOf": [
+          {"required": ["project"]},
+          {"required": ["packages"]}
+        ]
+      }
+    }
+  ],
   "required": []
 }

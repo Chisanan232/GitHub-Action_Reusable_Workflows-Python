@@ -39,6 +39,11 @@ on:
         description: "The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'."
         required: true
         type: string
+      project_name:
+        description: "Project identifier for monorepo (filters coverage artifacts by project). Leave empty for single-project repos."
+        type: string
+        required: false
+        default: ''
       run_with_python_version:
         description: "The Python version you want to use in this workflow."
         type: string
@@ -92,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download shell script for checking input parameters
         run: |
@@ -112,15 +117,15 @@ jobs:
           bash ./scripts/ci/check-input-params.sh ${{ inputs.upload-to-codacy }} ${{ secrets.codacy_token }}
 
       - name: Download code coverage result files which has be handled by different test type process
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
-          name: ${{ inputs.test_type }}_coverage_data_file
+          name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_data_file', inputs.project_name, inputs.test_type) || format('{0}_coverage_data_file', inputs.test_type) }}
           path: ${{ inputs.download_path }}
 
       - name: Download code coverage result files which has be handled by different test type process
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
-          name: ${{ inputs.test_type }}_coverage_xml_report
+          name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
           path: ${{ inputs.download_path }}
 
       - name: Install Python ${{ inputs.run_with_python_version }}

@@ -1,0 +1,277 @@
+---
+id: rw_upload_test_cov_report
+title: Upload Test Coverage Report
+sidebar_position: 4
+---
+
+# rw_upload_test_cov_report.yaml
+
+Upload test coverage reports to Codecov, Coveralls, or Codacy.
+
+[![View Source](https://img.shields.io/badge/View-Source-blue?logo=github)](https://github.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/blob/master/.github/workflows/rw_upload_test_cov_report.yaml)
+
+## Description
+
+This workflow downloads organized coverage reports and uploads them to one or more code coverage platforms. It supports multiple platforms simultaneously and handles different report formats for each platform.
+
+## Inputs
+
+### General Inputs
+
+| Parameter             | Type    | Required | Default | Description                                             |
+|-----------------------|---------|----------|---------|---------------------------------------------------------|
+| `download_path`       | string  | No       | `./`    | Path to download coverage reports                       |
+| `test_type`           | string  | **Yes**  | -       | Test type (`unit-test`, `integration-test`, `all-type`) |
+| `upload-to-codecov`   | boolean | No       | `false` | Upload to Codecov                                       |
+| `codecov_flags`       | string  | No       | `""`    | Codecov flags (required if uploading to Codecov)        |
+| `codecov_name`        | string  | No       | `""`    | Codecov report name (required if uploading to Codecov)  |
+| `upload-to-coveralls` | boolean | No       | `false` | Upload to Coveralls                                     |
+| `upload-to-codacy`    | boolean | No       | `false` | Upload to Codacy                                        |
+
+### Secret Inputs
+
+| Parameter         | Required    | Description                                                     |
+|-------------------|-------------|-----------------------------------------------------------------|
+| `codecov_token`   | Conditional | Codecov API token (required if `upload-to-codecov` is true)     |
+| `coveralls_token` | Conditional | Coveralls API token (required if `upload-to-coveralls` is true) |
+| `codacy_token`    | Conditional | Codacy project token (required if `upload-to-codacy` is true)   |
+
+## Supported Report Formats
+
+| Platform  | Accepted Format | Notes                       |
+|-----------|-----------------|-----------------------------|
+| Codecov   | `.xml`          | Uses coverage XML report    |
+| Coveralls | `.coverage`     | Uses raw coverage data file |
+| Codacy    | `.xml`          | Uses coverage XML report    |
+
+## Usage Examples
+
+### Upload to Codecov
+
+```yaml
+jobs:
+  upload-codecov:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codecov: true
+      codecov_flags: unittests
+      codecov_name: my-project-coverage
+```
+
+### Upload to Coveralls
+
+```yaml
+jobs:
+  upload-coveralls:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      coveralls_token: ${{ secrets.COVERALLS_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-coveralls: true
+```
+
+### Upload to Codacy
+
+```yaml
+jobs:
+  upload-codacy:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codacy_token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codacy: true
+```
+
+### Upload to Multiple Platforms
+
+```yaml
+jobs:
+  upload-coverage:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+      coveralls_token: ${{ secrets.COVERALLS_TOKEN }}
+      codacy_token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codecov: true
+      codecov_flags: unittests
+      codecov_name: my-project
+      upload-to-coveralls: true
+      upload-to-codacy: true
+```
+
+### Complete Coverage Pipeline
+
+```yaml
+name: Coverage
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  run-tests:
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+
+  organize-coverage:
+    needs: run-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: unit-test
+
+  upload-coverage:
+    needs: organize-coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codecov: true
+      codecov_flags: unittests
+      codecov_name: my-project-tests
+```
+
+## Platform-Specific Configuration
+
+### Codecov
+
+**Required Inputs:**
+- `codecov_token` (secret)
+- `codecov_flags` - Tags for organizing coverage reports
+- `codecov_name` - Display name for the report
+
+**Badge Example:**
+```markdown
+[![codecov](https://codecov.io/gh/username/repo/branch/master/graph/badge.svg?token=YOUR_TOKEN)](https://codecov.io/gh/username/repo)
+```
+
+**Setup:**
+1. Sign up at [codecov.io](https://codecov.io)
+2. Add your repository
+3. Get the upload token
+4. Add token to GitHub Secrets as `CODECOV_TOKEN`
+
+### Coveralls
+
+**Required Inputs:**
+- `coveralls_token` (secret)
+
+**Badge Example:**
+```markdown
+[![Coverage Status](https://coveralls.io/repos/github/username/repo/badge.svg?branch=master)](https://coveralls.io/github/username/repo?branch=master)
+```
+
+**Setup:**
+1. Sign up at [coveralls.io](https://coveralls.io)
+2. Add your repository
+3. Get the repo token
+4. Add token to GitHub Secrets as `COVERALLS_TOKEN`
+
+**Note:** Coveralls uses the `.coverage` file format and performs its own coverage combination.
+
+### Codacy
+
+**Required Inputs:**
+- `codacy_token` (secret) - Use **CODACY_PROJECT_TOKEN**, not CODACY_API_TOKEN
+
+**Badge Example:**
+```markdown
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/PROJECT_ID)](https://www.codacy.com/gh/username/repo/dashboard)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/PROJECT_ID)](https://www.codacy.com/gh/username/repo/dashboard)
+```
+
+**Setup:**
+1. Sign up at [codacy.com](https://www.codacy.com)
+2. Add your repository
+3. Get the project token (not API token)
+4. Add token to GitHub Secrets as `CODACY_PROJECT_TOKEN`
+
+## Test Type Options
+
+| Test Type          | Description                    | Use Case                                     |
+|--------------------|--------------------------------|----------------------------------------------|
+| `unit-test`        | Unit test coverage only        | Upload unit test coverage separately         |
+| `integration-test` | Integration test coverage only | Upload integration test coverage separately  |
+| `all-type`         | Combined coverage              | Upload combined coverage from all test types |
+
+## Prerequisites
+
+Before using this workflow:
+
+1. **Coverage reports must be generated** - Use `rw_organize_test_cov_reports` first
+2. **Secrets must be configured** - Add platform tokens to GitHub Secrets
+3. **Platform accounts must be set up** - Register your repository with coverage platforms
+
+## Validation
+
+The workflow validates inputs before uploading:
+
+- Checks that platform tokens are provided when upload flags are true
+- Verifies required Codecov parameters (`codecov_flags`, `codecov_name`) are set
+- Ensures coverage report files exist before attempting upload
+
+## Troubleshooting
+
+### Upload Fails - Missing Token
+
+**Error:** Token not provided for platform
+
+**Solution:** 
+- Verify the secret is added to GitHub repository settings
+- Check the secret name matches exactly (case-sensitive)
+- Ensure the secret is accessible to the workflow
+
+### Upload Fails - Invalid Report Format
+
+**Error:** Platform rejects coverage report
+
+**Solution:**
+- Codecov/Codacy: Ensure XML report is generated
+- Coveralls: Ensure `.coverage` file is available
+- Run `rw_organize_test_cov_reports` before this workflow
+
+### Codecov Upload Fails - Missing Flags
+
+**Error:** Required parameter missing
+
+**Solution:**
+- Set both `codecov_flags` and `codecov_name` when `upload-to-codecov` is true
+- Example: `codecov_flags: unittests`, `codecov_name: my-project`
+
+### Coverage Shows 0%
+
+**Possible Causes:**
+- Tests didn't run successfully
+- Coverage wasn't collected during test execution
+- Wrong test type specified
+- Coverage files not uploaded as artifacts
+
+**Solution:**
+- Check test execution logs
+- Verify `pytest-cov` is installed
+- Ensure `rw_run_test` completed successfully
+- Review artifact uploads in previous jobs
+
+## Best Practices
+
+1. **Use Descriptive Names:** Set meaningful `codecov_name` and `codecov_flags`
+2. **Separate Test Types:** Upload unit and integration coverage separately for better tracking
+3. **Combine for Overall:** Use `all-type` for overall project coverage
+4. **Secure Tokens:** Never commit tokens to repository, always use GitHub Secrets
+5. **Monitor Coverage:** Set up branch protection rules based on coverage thresholds
+
+## Related Workflows
+
+- [rw_run_test](../test/rw_run_test.mdx) - Generate coverage during test execution
+- [rw_organize_test_cov_reports](rw_organize_test_cov_reports.mdx) - Organize coverage reports before upload
+- [rw_poetry_run_test](../test/rw_poetry_run_test.mdx) - Poetry version with coverage

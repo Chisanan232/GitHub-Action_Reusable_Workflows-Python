@@ -1,0 +1,551 @@
+---
+title: Developer Guide
+sidebar_position: 6
+---
+
+import TOCInline from '@theme/TOCInline';
+
+# Developer Guide
+
+![Developer Tools](https://img.shields.io/badge/Developer-Friendly-blue?style=for-the-badge)
+![Best Practices](https://img.shields.io/badge/Guide-Best%20Practices-green?style=for-the-badge)
+![Reusable Workflows](https://img.shields.io/badge/Workflows-Reusable-orange?style=for-the-badge)
+
+This guide provides comprehensive information for developers working with GitHub Action Reusable Workflows, including development practices, testing strategies, and release management.
+
+<TOCInline toc={toc} />
+
+## Developing Reusable Workflows
+
+### Workflow Structure
+
+Reusable workflows in this project follow a consistent structure:
+
+```yaml
+name: Workflow Name
+
+on:
+  workflow_call:
+    inputs:
+      # Define workflow inputs
+      input_name:
+        description: 'Description of the input'
+        required: true
+        type: string
+    outputs:
+      # Define workflow outputs
+      output_name:
+        description: 'Description of the output'
+        value: ${{ jobs.job_name.outputs.output_value }}
+    secrets:
+      # Define required secrets
+      secret_name:
+        description: 'Description of the secret'
+        required: true
+
+jobs:
+  job_name:
+    runs-on: ubuntu-latest
+    outputs:
+      output_value: ${{ steps.step_id.outputs.value }}
+    steps:
+      - name: Step description
+        id: step_id
+        run: |
+          # Workflow logic
+```
+
+### Naming Conventions
+
+**Reusable Workflows:**
+- Prefix: `rw_` (reusable workflow)
+- Format: `rw_<category>_<action>.yaml`
+- Examples:
+  - `rw_run_test.yaml` - Test execution
+  - `rw_poetry_run_test.yaml` - Poetry-based testing
+  - `rw_build_git-tag_and_create_github-release.yaml` - Release creation
+
+**Test Workflows:**
+- Prefix: `test-` or `test_`
+- Format: `test_<workflow_name>.yaml` or `test-<workflow_name>.yml`
+- Examples:
+  - `test_python_project_ci_multi-tests.yaml`
+  - `test-release-validate.yml`
+
+### Best Practices
+
+#### 1. Input Validation
+
+Always validate inputs at the start of your workflow:
+
+```yaml
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate inputs
+        run: |
+          if [ -z "${{ inputs.required_input }}" ]; then
+            echo "Error: required_input is empty"
+            exit 1
+          fi
+```
+
+#### 2. Clear Output Definitions
+
+Define outputs with clear descriptions:
+
+```yaml
+outputs:
+  test_result:
+    description: 'Test execution result (success/failure)'
+    value: ${{ jobs.test.outputs.result }}
+  coverage_percentage:
+    description: 'Code coverage percentage'
+    value: ${{ jobs.test.outputs.coverage }}
+```
+
+#### 3. Error Handling
+
+Include proper error handling and informative messages:
+
+```yaml
+- name: Run tests with error handling
+  id: test
+  run: |
+    set -e
+    if ! pytest tests/; then
+      echo "::error::Tests failed"
+      exit 1
+    fi
+    echo "::notice::All tests passed successfully"
+```
+
+#### 4. Documentation
+
+Document your workflow with clear comments:
+
+```yaml
+# This workflow runs Python tests with multiple test types
+# It supports both pip and Poetry-based projects
+# Inputs:
+#   - test_type: Type of tests to run (unit, integration, etc.)
+#   - python_version: Python version to use (default: 3.11)
+```
+
+## Testing Reusable Workflows
+
+### Test Workflow Structure
+
+Create test workflows that call your reusable workflows with sample projects:
+
+```yaml
+name: Test Reusable Workflow
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/rw_run_test.yaml'
+      - 'test/**'
+  pull_request:
+    branches: [master]
+
+jobs:
+  test-workflow:
+    uses: ./.github/workflows/rw_run_test.yaml
+    with:
+      test_type: 'unit'
+      python_version: '3.11'
+    secrets:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Sample Projects
+
+The repository includes sample projects for testing:
+
+- **Root project** - Standard Python project with setup.py
+- **`nested_poetry_project/`** - Poetry project in subdirectory
+- **`for_deployment_checking_ci_only/`** - Deployment testing
+- **`test_gh_workflow/`** - GitHub Actions workflow testing
+
+### Testing Strategies
+
+#### 1. Unit Testing Workflows
+
+Test individual workflow components:
+
+```bash
+# Test a specific reusable workflow
+.github/workflows/test_python_project_ci_one-test.yaml
+```
+
+#### 2. Integration Testing
+
+Test workflows with real sample projects:
+
+```bash
+# Test multi-test workflow with actual project
+.github/workflows/test_python_project_ci_multi-tests.yaml
+```
+
+#### 3. Matrix Testing
+
+Test across multiple configurations:
+
+```yaml
+strategy:
+  matrix:
+    python-version: ['3.9', '3.10', '3.11', '3.12']
+    test-type: ['unit', 'integration']
+```
+
+## Release Management
+
+### Configuring a Release
+
+Edit `.github/tag_and_release/intent.yaml`:
+
+```yaml
+release: true
+level: "patch"  # patch, minor, major, or auto
+artifacts:
+  github-action-reusable-workflow: "auto"  # auto, force, or skip
+notes: "Release notes describing changes"
+```
+
+### Release Levels
+
+- **`patch`**: Bug fixes (0.0.x)
+- **`minor`**: New features, backward compatible (0.x.0)
+- **`major`**: Breaking changes (x.0.0)
+- **`auto`**: Automatically determine based on changes
+
+### Release Process
+
+#### 1. Development
+
+```bash
+# Create feature branch
+git checkout -b feature/new-workflow
+
+# Develop your workflow
+# ... make changes ...
+
+# Test locally
+act -j test-workflow  # Using act for local testing
+```
+
+#### 2. Testing
+
+```bash
+# Push to trigger test workflows
+git push origin feature/new-workflow
+
+# Create PR for validation
+gh pr create --title "feat: add new reusable workflow" \
+  --body "Adds new workflow for X functionality"
+```
+
+#### 3. Release Configuration
+
+```bash
+# Update release intent
+cat > .github/tag_and_release/intent.yaml << EOF
+release: true
+level: minor
+artifacts:
+  github-action-reusable-workflow: auto
+notes: "feat: add new reusable workflow for X"
+EOF
+
+# Update release notes
+cat > .github/tag_and_release/release-notes.md << EOF
+## New Features
+- Added reusable workflow for X functionality
+
+## Changes
+- Updated documentation
+EOF
+```
+
+#### 4. Merge and Release
+
+```bash
+# Merge PR to master
+gh pr merge --merge
+
+# Release workflow runs automatically
+# Monitor release progress
+gh run list --workflow=ci-cd.yaml --limit=1
+gh run watch <run-id>
+```
+
+### Version Branches
+
+After release, a version branch is created:
+
+```bash
+# Users can reference specific versions
+uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@v1.2.3
+
+# Or use latest
+uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+```
+
+## Common Workflows
+
+### Adding a New Reusable Workflow
+
+1. **Create the workflow file**:
+   ```bash
+   touch .github/workflows/rw_new_feature.yaml
+   ```
+
+2. **Define the workflow**:
+   ```yaml
+   name: New Feature Workflow
+   
+   on:
+     workflow_call:
+       inputs:
+         feature_param:
+           required: true
+           type: string
+   
+   jobs:
+     execute:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v5
+         - name: Execute feature
+           run: echo "Feature: ${{ inputs.feature_param }}"
+   ```
+
+3. **Create a test workflow**:
+   ```bash
+   touch .github/workflows/test_new_feature.yaml
+   ```
+
+4. **Test the workflow**:
+   ```yaml
+   name: Test New Feature
+   
+   on:
+     push:
+       paths:
+         - '.github/workflows/rw_new_feature.yaml'
+   
+   jobs:
+     test:
+       uses: ./.github/workflows/rw_new_feature.yaml
+       with:
+         feature_param: 'test-value'
+   ```
+
+5. **Document the workflow**:
+   - Add documentation in `docs/contents/document/workflows/`
+   - Update relevant guides and examples
+
+### Updating an Existing Workflow
+
+1. **Make changes** to the workflow file
+2. **Update tests** to cover new functionality
+3. **Test thoroughly** with sample projects
+4. **Update documentation** to reflect changes
+5. **Configure release** with appropriate version bump
+6. **Create PR** for review
+
+### Debugging Workflows
+
+#### Enable Debug Logging
+
+```bash
+# Set repository secrets for debug logging
+gh secret set ACTIONS_STEP_DEBUG --body "true"
+gh secret set ACTIONS_RUNNER_DEBUG --body "true"
+```
+
+#### Local Testing with Act
+
+```bash
+# Install act
+brew install act  # macOS
+# or
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Run workflow locally
+act -j test-workflow
+
+# Run with specific event
+act push -e event.json
+```
+
+#### View Workflow Logs
+
+```bash
+# List recent runs
+gh run list --workflow=test_python_project_ci_multi-tests.yaml
+
+# View specific run
+gh run view <run-id>
+
+# Download logs
+gh run download <run-id>
+```
+
+## Troubleshooting
+
+### Workflow Not Triggering
+
+**Check:**
+- Path filters in `on.push.paths` or `on.pull_request.paths`
+- Branch filters match your target branch
+- Workflow file syntax is valid
+
+**Solution:**
+```bash
+# Validate workflow syntax
+gh workflow view ci-cd.yaml
+
+# Check workflow runs
+gh run list --workflow=ci-cd.yaml --limit=10
+```
+
+### Reusable Workflow Errors
+
+**Common Issues:**
+
+1. **Missing required inputs**:
+   ```yaml
+   # Ensure all required inputs are provided
+   with:
+     required_input: 'value'
+   ```
+
+2. **Secret not available**:
+   ```yaml
+   # Pass secrets explicitly
+   secrets:
+     github_token: ${{ secrets.GITHUB_TOKEN }}
+   ```
+
+3. **Incorrect workflow reference**:
+   ```yaml
+   # Use correct path and ref
+   uses: ./.github/workflows/rw_workflow.yaml  # Local
+   uses: owner/repo/.github/workflows/rw_workflow.yaml@v1.0.0  # Remote
+   ```
+
+### Test Failures
+
+**Debugging steps:**
+
+1. Check test workflow logs
+2. Verify sample project structure
+3. Ensure dependencies are installed
+4. Check Python version compatibility
+5. Review test configuration
+
+**Example:**
+```bash
+# Run tests locally
+cd test/
+pytest -v
+
+# Check test configuration
+cat pytest.ini
+```
+
+### Release Issues
+
+**Problem**: Release not created
+
+**Check:**
+- Release intent configuration is valid
+- Workflow has write permissions
+- GitHub token has correct scopes
+
+**Solution:**
+```bash
+# Verify intent configuration
+cat .github/tag_and_release/intent.yaml
+
+# Check workflow permissions
+# Ensure GITHUB_TOKEN has write access to contents and releases
+```
+
+## Monitoring and Maintenance
+
+### Workflow Status
+
+Monitor workflow health:
+
+```bash
+# Check all workflows
+gh workflow list
+
+# View specific workflow status
+gh workflow view ci-cd.yaml
+
+# List recent runs
+gh run list --limit=20
+```
+
+### Dependency Updates
+
+Keep actions up to date:
+
+```bash
+# Check for action updates
+# Update actions/checkout, actions/setup-python, etc.
+
+# Example update
+sed -i 's/actions\/checkout@v4/actions\/checkout@v5/g' .github/workflows/*.yaml
+```
+
+### Performance Optimization
+
+**Tips:**
+- Use caching for dependencies
+- Minimize checkout operations
+- Use matrix strategies for parallel execution
+- Optimize test execution time
+
+**Example caching:**
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ~/.cache/pip
+    key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+```
+
+## Best Practices Summary
+
+### ✅ Do's
+
+- **Version your workflows** - Use semantic versioning
+- **Test thoroughly** - Create comprehensive test workflows
+- **Document clearly** - Add comments and documentation
+- **Handle errors** - Include proper error handling
+- **Use outputs** - Define clear outputs for downstream jobs
+- **Validate inputs** - Check inputs at workflow start
+- **Follow conventions** - Use consistent naming patterns
+
+### ❌ Don'ts
+
+- **Don't hardcode values** - Use inputs and variables
+- **Don't skip testing** - Always test before releasing
+- **Don't ignore errors** - Handle failures gracefully
+- **Don't duplicate code** - Reuse existing workflows
+- **Don't forget documentation** - Keep docs updated
+- **Don't break compatibility** - Use major versions for breaking changes
+
+---
+
+🔗 **Related Documentation**:
+- [Release System](./release-system.mdx) - Comprehensive release workflow configuration
+- [Documentation Deployment](./documentation-deployment.mdx) - Documentation workflow architecture
+- [Test Workflows](./continuous-integration.mdx) - Understanding the test workflow system
+- [CI/CD Overview](./index.mdx) - Navigate to other CI/CD documentation sections

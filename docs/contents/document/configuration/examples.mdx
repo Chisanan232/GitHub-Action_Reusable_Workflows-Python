@@ -1,0 +1,489 @@
+---
+id: examples
+title: Workflow Examples
+sidebar_position: 2
+---
+
+# Workflow Examples
+
+This page provides complete, real-world examples of GitHub Action workflows using the reusable workflow templates.
+
+## Basic CI Pipeline
+
+A simple CI pipeline that runs tests on every push and pull request:
+
+```yaml
+# .github/workflows/ci.yaml
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+```
+
+## CI with Coverage Reporting
+
+Add code coverage reporting to Codecov:
+
+```yaml
+# .github/workflows/ci-coverage.yaml
+name: CI with Coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  # Discover tests
+  prepare-tests:
+    name: Discover Test Items
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  # Run tests
+  run-tests:
+    name: Run Tests
+    needs: prepare-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: ${{ needs.prepare-tests.outputs.all_test_items }}
+
+  # Organize coverage
+  organize-coverage:
+    name: Organize Coverage Reports
+    needs: run-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: unit-test
+
+  # Upload to Codecov
+  upload-coverage:
+    name: Upload to Codecov
+    needs: organize-coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      test_type: unit-test
+      upload-to-codecov: true
+      codecov_flags: unittests
+      codecov_name: my-project-coverage
+```
+
+## Multi-Version Testing
+
+Test across multiple Python versions and operating systems:
+
+```yaml
+# .github/workflows/test-matrix.yaml
+name: Multi-Version Tests
+
+on:
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  prepare-tests:
+    name: Discover Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_get_tests.yaml@master
+    with:
+      shell_arg: test/unit_test/
+
+  test-multi-version:
+    name: Test Multiple Python Versions
+    needs: prepare-tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test_with_multi_py_versions.yaml@master
+    with:
+      test_type: unit-test
+      all_test_items_paths: ${{ needs.prepare-tests.outputs.all_test_items }}
+```
+
+## Poetry Project CI/CD
+
+Complete CI/CD for Poetry-managed projects:
+
+```yaml
+# .github/workflows/poetry-ci-cd.yaml
+name: Poetry CI/CD
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '**/__pkg_info__.py'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  # Run tests with Poetry
+  test:
+    name: Run Tests with Poetry
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_poetry_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+      test_working_directory: ./
+      install_dependency_with_group: test,dev
+
+  # Check if deployment needed
+  check-deployment:
+    name: Check Deployment State
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_checking_deployment_state.yaml@master
+    with:
+      library-name: my-package
+      library-source-code-path: ./src/my_package
+
+  # Build and release
+  release:
+    name: Build Git Tag and GitHub Release
+    needs: check-deployment
+    if: needs.check-deployment.outputs.version_update_state == 'VERSION UPDATE'
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_build_git-tag_and_create_github-release.yaml@master
+    with:
+      project_type: python-package
+      project_name: my-package
+      software_version_format: general-3
+
+  # Deploy to PyPI
+  deploy-pypi:
+    name: Deploy to PyPI
+    needs: [check-deployment, release]
+    if: needs.check-deployment.outputs.version_update_state == 'VERSION UPDATE'
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_push_pypi.yaml@master
+    secrets:
+      PyPI_user: ${{ secrets.PYPI_USERNAME }}
+      PyPI_token: ${{ secrets.PYPI_TOKEN }}
+    with:
+      build-type: poetry
+      release-type: ${{ needs.release.outputs.python_release_version }}
+      push-to-PyPI: official
+```
+
+## Integration Tests with HTTP Server
+
+Run integration tests that require a running HTTP server:
+
+```yaml
+# .github/workflows/integration-tests.yaml
+name: Integration Tests
+
+on:
+  push:
+    branches: [ master, develop ]
+
+jobs:
+  integration-test:
+    name: Run Integration Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: integration-test
+      all_test_items_paths: test/integration_test/
+      setup_http_server: true
+      http_server_host: 0.0.0.0
+      http_server_port: 8080
+      http_server_app_module: test._http_server.app
+      http_server_enter_point: app
+```
+
+## Complete CI/CD with Multiple Coverage Platforms
+
+Upload coverage to multiple platforms:
+
+```yaml
+# .github/workflows/full-ci-cd.yaml
+name: Complete CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  # Unit Tests
+  unit-test:
+    name: Unit Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+
+  # Integration Tests
+  integration-test:
+    name: Integration Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: integration-test
+      all_test_items_paths: test/integration_test/
+      setup_http_server: true
+      http_server_port: 8080
+      http_server_app_module: test._http_server.app
+      http_server_enter_point: app
+
+  # Organize Unit Test Coverage
+  unit-coverage:
+    name: Organize Unit Test Coverage
+    needs: unit-test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: unit-test
+
+  # Organize Integration Test Coverage
+  integration-coverage:
+    name: Organize Integration Test Coverage
+    needs: integration-test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    with:
+      test_type: integration-test
+
+  # Upload to Codecov
+  codecov:
+    name: Upload to Codecov
+    needs: [unit-coverage, integration-coverage]
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      test_type: all-type
+      upload-to-codecov: true
+      codecov_flags: alltests
+      codecov_name: my-project-full-coverage
+
+  # Upload to Coveralls
+  coveralls:
+    name: Upload to Coveralls
+    needs: [unit-coverage, integration-coverage]
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_upload_test_cov_report.yaml@master
+    secrets:
+      coveralls_token: ${{ secrets.COVERALLS_TOKEN }}
+    with:
+      test_type: all-type
+      upload-to-coveralls: true
+
+  # SonarQube Scan
+  sonarqube:
+    name: SonarQube Analysis
+    needs: unit-coverage
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_sonarqube_scan.yaml@master
+    secrets:
+      sonar_token: ${{ secrets.SONAR_TOKEN }}
+    with:
+      test_type: unit-test
+```
+
+## Docker Build and Deploy
+
+Build, test, and deploy Docker images:
+
+```yaml
+# .github/workflows/docker.yaml
+name: Docker Build and Deploy
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+
+jobs:
+  # Parse configuration
+  parse-config:
+    name: Parse Project Config
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_parse_project_config.yaml@master
+    with:
+      config-path: .github/tag_and_release/intent.yaml
+
+  # Docker operations
+  docker:
+    name: Docker Build and Push
+    needs: parse-config
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_docker_operations.yaml@master
+    secrets:
+      dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+      dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+    with:
+      project_name: ${{ needs.parse-config.outputs.project_name }}
+      docker_registry_dockerhub: ${{ needs.parse-config.outputs.docker_registry_dockerhub }}
+      docker_registry_ghcr: ${{ needs.parse-config.outputs.docker_registry_ghcr }}
+      docker_health_check_port: ${{ needs.parse-config.outputs.docker_health_check_port }}
+      docker_health_check_path: ${{ needs.parse-config.outputs.docker_health_check_path }}
+      docker_run_options: ${{ needs.parse-config.outputs.docker_run_options }}
+```
+
+## Documentation Deployment
+
+Build and deploy documentation to GitHub Pages:
+
+```yaml
+# .github/workflows/docs.yaml
+name: Documentation
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yaml'
+
+jobs:
+  deploy-docs:
+    name: Deploy Documentation
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_documentation_deployment.yaml@master
+    with:
+      docs_working_directory: ./docs
+      node_version: '20'
+      build_command: npm run build
+      publish_dir: ./docs/build
+```
+
+## Scheduled Testing
+
+Run tests on a schedule (e.g., nightly builds):
+
+```yaml
+# .github/workflows/nightly.yaml
+name: Nightly Tests
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  test-all-versions:
+    name: Test All Python Versions
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test_with_multi_py_versions.yaml@master
+    with:
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+
+  integration-test:
+    name: Integration Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: integration-test
+      all_test_items_paths: test/integration_test/
+      setup_http_server: true
+      http_server_port: 8080
+      http_server_app_module: test._http_server.app
+      http_server_enter_point: app
+```
+
+## Pre-Release Validation
+
+Validate package before releasing:
+
+```yaml
+# .github/workflows/pre-release.yaml
+name: Pre-Release Validation
+
+on:
+  push:
+    branches: [ release/* ]
+
+jobs:
+  # Run all tests
+  test:
+    name: Run All Tests
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_run_test_with_multi_py_versions.yaml@master
+    with:
+      test_type: unit-test
+      all_test_items_paths: test/unit_test/
+
+  # Test package installation
+  pre-build-test:
+    name: Test Package Installation
+    needs: test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_pre-building_test.yaml@master
+    with:
+      build-type: poetry
+      python_package_name: my-package
+      test_shell_in_python: from my_package import __version__
+      test_shell: echo "Package installed successfully"
+
+  # Build package
+  build-package:
+    name: Build Python Package
+    needs: pre-build-test
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_python_package.yaml@master
+    with:
+      build-type: poetry
+      upload-artifact: true
+```
+
+## Monorepo with Multiple Projects
+
+Handle multiple Python projects in a monorepo:
+
+```yaml
+# .github/workflows/monorepo.yaml
+name: Monorepo CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  # Project A
+  test-project-a:
+    name: Test Project A
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_poetry_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: projects/project-a/test/
+      test_working_directory: ./projects/project-a
+
+  # Project B
+  test-project-b:
+    name: Test Project B
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_poetry_run_test.yaml@master
+    with:
+      python_version: '3.11'
+      test_type: unit-test
+      all_test_items_paths: projects/project-b/test/
+      test_working_directory: ./projects/project-b
+```
+
+## Tips for Using Examples
+
+1. **Replace Placeholders**: Update project names, paths, and tokens
+2. **Adjust Python Versions**: Set appropriate Python versions for your project
+3. **Configure Secrets**: Add required secrets to your repository
+4. **Test Incrementally**: Start with basic workflows and add complexity
+5. **Review Logs**: Check workflow logs to debug issues
+6. **Pin Versions**: Use specific versions (`@v1.0.0`) in production
+
+## Next Steps
+
+- Review [Configuration Guide](./index.mdx) for detailed setup instructions
+- Check [Workflow Reference](../workflows/index.mdx) for all available workflows
+- See [Quick Start](../quick-start/index.mdx) for getting started

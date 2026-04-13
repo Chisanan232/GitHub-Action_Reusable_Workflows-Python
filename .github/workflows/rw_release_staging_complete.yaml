@@ -5,6 +5,11 @@ name: Complete Staging Release Process
 on:
   workflow_call:
     inputs:
+      package-name:
+        description: 'Package to release (for monorepo). Leave empty for single-project.'
+        required: false
+        default: ''
+        type: string
       level:
         description: 'Release level for staging (patch, minor, major)'
         required: false
@@ -44,24 +49,35 @@ jobs:
   config:
     name: Parse Configuration
     uses: ./.github/workflows/rw_parse_project_config.yaml
+    with:
+      package-name: ${{ inputs.package-name }}
 
   check-dockerfile:
     name: Check Dockerfile Exists
     runs-on: ubuntu-latest
+    needs: [config]
+    if: always()
     outputs:
       has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Check for Dockerfile
         id: check
+        env:
+          WORK_DIR: ${{ inputs.package-name != '' && needs.config.outputs.working_directory || './' }}
         run: |
-          if [ -f "Dockerfile" ]; then
-            echo "✅ Dockerfile found"
+          # Check for Dockerfile in package directory if monorepo, otherwise root
+          DOCKERFILE_PATH="${WORK_DIR}/Dockerfile"
+          
+          echo "📁 Checking for Dockerfile at: $DOCKERFILE_PATH"
+          
+          if [ -f "$DOCKERFILE_PATH" ]; then
+            echo "✅ Dockerfile found at $DOCKERFILE_PATH"
             echo "has_dockerfile=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ No Dockerfile found - Docker processes will be skipped"
+            echo "⚠️ No Dockerfile found at $DOCKERFILE_PATH - Docker processes will be skipped"
             echo "has_dockerfile=false" >> $GITHUB_OUTPUT
           fi
 
@@ -74,7 +90,7 @@ jobs:
       rc_version: ${{ steps.version.outputs.rc_version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Only use ref for push events to master to get latest commit after version bump
@@ -116,6 +132,7 @@ jobs:
     uses: ./.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml
     needs: [config, compute-version]
     with:
+      package-name: ${{ inputs.package-name }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
       debug_mode: true
@@ -127,6 +144,8 @@ jobs:
     needs: [config, compute-version, build_git-tag_and_create_github-release]
     with:
       operation: 'publish-testpypi'
+      package_working_directory: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       version: ${{ needs.compute-version.outputs.version }}
       checkout-sha: ${{ github.sha }}
       artifact-name: 'staging-python-package'
@@ -145,6 +164,8 @@ jobs:
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       operation: 'push'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
@@ -161,6 +182,8 @@ jobs:
     if: needs.check-dockerfile.outputs.has_dockerfile == 'true'
     with:
       operation: 'push'
+      build_context: ${{ needs.config.outputs.working_directory }}
+      project_name: ${{ needs.config.outputs.project_name }}
       registry: ${{ needs.config.outputs.docker_registry_ghcr }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
@@ -171,9 +194,10 @@ jobs:
       docker-run-options: ${{ needs.config.outputs.docker_run_options }}
 
   docs-preview:
-    uses: ./.github/workflows/rw_docs_operations.yaml
+    uses: ./.github/workflows/rw_docusaurus_operations.yaml
     needs: [config, compute-version]
     with:
+      package-name: ${{ inputs.package-name }}
       operation: 'deploy-preview'
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}

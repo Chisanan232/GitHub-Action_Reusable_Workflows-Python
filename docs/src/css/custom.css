@@ -1,0 +1,584 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ * 
+ * Color scheme inspired by GitHub's technical and professional design
+ */
+
+/* GitHub-inspired color palette */
+:root {
+  /* Primary colors based on GitHub's signature blue */
+  --ifm-color-primary: #0969da;
+  --ifm-color-primary-dark: #0860ca;
+  --ifm-color-primary-darker: #0757ba;
+  --ifm-color-primary-darkest: #0550ae;
+  --ifm-color-primary-light: #1f73e6;
+  --ifm-color-primary-lighter: #2f7eea;
+  --ifm-color-primary-lightest: #4493f8;
+
+  /* GitHub accent colors */
+  --github-green: #1a7f37;
+  --github-green-dark: #116329;
+  --github-green-light: #2da44e;
+  --github-blue: #0969da;
+  --github-blue-dark: #0550ae;
+  --github-blue-light: #218bff;
+  --github-orange: #bc4c00;
+  --github-orange-dark: #953800;
+  --github-orange-light: #d4735e;
+  --github-red: #cf222e;
+  --github-red-dark: #a40e26;
+  --github-red-light: #ff6a69;
+  --github-purple: #8250df;
+  --github-purple-dark: #6639ba;
+  --github-purple-light: #a371f7;
+
+  /* GitHub neutral colors */
+  --github-gray-0: #f6f8fa;
+  --github-gray-1: #eaeef2;
+  --github-gray-2: #d0d7de;
+  --github-gray-3: #afb8c1;
+  --github-gray-4: #8c959f;
+  --github-gray-5: #6e7781;
+  --github-gray-6: #57606a;
+  --github-gray-7: #424a53;
+  --github-gray-8: #32383f;
+  --github-gray-9: #24292f;
+
+  /* Enhanced UI colors using GitHub palette */
+  --ifm-color-success: var(--github-green);
+  --ifm-color-success-dark: var(--github-green-dark);
+  --ifm-color-success-darker: #0d4a1f;
+  --ifm-color-success-darkest: #033d16;
+  --ifm-color-success-light: var(--github-green-light);
+  --ifm-color-success-lighter: #3fb950;
+  --ifm-color-success-lightest: #56d364;
+
+  --ifm-color-info: var(--github-blue);
+  --ifm-color-info-dark: var(--github-blue-dark);
+  --ifm-color-info-darker: #0349a6;
+  --ifm-color-info-darkest: #033d8b;
+  --ifm-color-info-light: var(--github-blue-light);
+  --ifm-color-info-lighter: #54aeff;
+  --ifm-color-info-lightest: #79c0ff;
+
+  --ifm-color-warning: var(--github-orange);
+  --ifm-color-warning-dark: var(--github-orange-dark);
+  --ifm-color-warning-darker: #762d00;
+  --ifm-color-warning-darkest: #5c2200;
+  --ifm-color-warning-light: var(--github-orange-light);
+  --ifm-color-warning-lighter: #e09b72;
+  --ifm-color-warning-lightest: #f0b98d;
+
+  --ifm-color-danger: var(--github-red);
+  --ifm-color-danger-dark: var(--github-red-dark);
+  --ifm-color-danger-darker: #82071e;
+  --ifm-color-danger-darkest: #660018;
+  --ifm-color-danger-light: var(--github-red-light);
+  --ifm-color-danger-lighter: #ff8182;
+  --ifm-color-danger-lightest: #ffb1af;
+
+  /* Code and syntax highlighting - GitHub style */
+  --ifm-code-font-size: 85%;
+  --ifm-code-background: var(--github-gray-0);
+  --ifm-code-border-radius: 6px;
+  --ifm-code-padding-horizontal: 0.4rem;
+  --ifm-code-padding-vertical: 0.2rem;
+  --docusaurus-highlighted-code-line-bg: rgba(9, 105, 218, 0.1);
+  
+  /* Links and interactive elements - GitHub style */
+  --ifm-link-color: var(--github-blue);
+  --ifm-link-hover-color: var(--github-blue-dark);
+  --ifm-link-decoration: none;
+  
+  /* Typography - GitHub style */
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --ifm-font-family-monospace: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --ifm-heading-font-weight: 600;
+  --ifm-font-weight-semibold: 600;
+  --ifm-font-weight-bold: 600;
+  
+  /* Borders - GitHub style */
+  --ifm-global-border-width: 1px;
+  --ifm-border-color: var(--github-gray-2);
+  
+  /* Shadows - GitHub style */
+  --ifm-global-shadow-lw: 0 1px 3px rgba(27, 31, 35, 0.12), 0 8px 24px rgba(66, 74, 83, 0.12);
+  --ifm-global-shadow-md: 0 3px 6px rgba(140, 149, 159, 0.15);
+  --ifm-global-shadow-tl: 0 12px 28px rgba(140, 149, 159, 0.2);
+  
+  /* Background gradients for hero sections - GitHub style */
+  --github-gradient: linear-gradient(135deg, #0969da 0%, #8250df 100%);
+  --github-gradient-subtle: linear-gradient(135deg, rgba(9, 105, 218, 0.05) 0%, rgba(130, 80, 223, 0.05) 100%);
+}
+
+/* Dark mode with GitHub's dark theme colors */
+[data-theme='dark'] {
+  /* GitHub dark theme primary colors */
+  --ifm-color-primary: #58a6ff;
+  --ifm-color-primary-dark: #4493f8;
+  --ifm-color-primary-darker: #3886f7;
+  --ifm-color-primary-darkest: #1f6feb;
+  --ifm-color-primary-light: #79c0ff;
+  --ifm-color-primary-lighter: #a5d6ff;
+  --ifm-color-primary-lightest: #c6e2ff;
+
+  /* GitHub dark theme accent colors */
+  --github-green: #3fb950;
+  --github-green-dark: #2ea043;
+  --github-green-light: #56d364;
+  --github-blue: #58a6ff;
+  --github-blue-dark: #1f6feb;
+  --github-blue-light: #79c0ff;
+  --github-orange: #db6d28;
+  --github-orange-dark: #bd561d;
+  --github-orange-light: #f0883e;
+  --github-red: #ff7b72;
+  --github-red-dark: #f85149;
+  --github-red-light: #ffa198;
+  --github-purple: #bc8cff;
+  --github-purple-dark: #a371f7;
+  --github-purple-light: #d2a8ff;
+
+  /* GitHub dark theme neutral colors */
+  --github-gray-0: #010409;
+  --github-gray-1: #0d1117;
+  --github-gray-2: #161b22;
+  --github-gray-3: #21262d;
+  --github-gray-4: #30363d;
+  --github-gray-5: #484f58;
+  --github-gray-6: #6e7681;
+  --github-gray-7: #8b949e;
+  --github-gray-8: #b1bac4;
+  --github-gray-9: #c9d1d9;
+
+  /* Dark mode UI colors */
+  --ifm-background-color: var(--github-gray-1);
+  --ifm-background-surface-color: var(--github-gray-2);
+  --ifm-color-content: var(--github-gray-9);
+  --ifm-color-content-secondary: var(--github-gray-7);
+
+  --ifm-color-success: var(--github-green);
+  --ifm-color-success-dark: var(--github-green-dark);
+  --ifm-color-success-darker: #238636;
+  --ifm-color-success-darkest: #196c2e;
+  --ifm-color-success-light: var(--github-green-light);
+  --ifm-color-success-lighter: #7ee787;
+  --ifm-color-success-lightest: #aff5b4;
+
+  --ifm-color-info: var(--github-blue);
+  --ifm-color-info-dark: var(--github-blue-dark);
+  --ifm-color-info-darker: #1158c7;
+  --ifm-color-info-darkest: #0d419d;
+  --ifm-color-info-light: var(--github-blue-light);
+  --ifm-color-info-lighter: #a5d6ff;
+  --ifm-color-info-lightest: #c6e2ff;
+
+  --ifm-color-warning: var(--github-orange);
+  --ifm-color-warning-dark: var(--github-orange-dark);
+  --ifm-color-warning-darker: #9e4f0f;
+  --ifm-color-warning-darkest: #762d00;
+  --ifm-color-warning-light: var(--github-orange-light);
+  --ifm-color-warning-lighter: #ffa657;
+  --ifm-color-warning-lightest: #ffb77c;
+
+  --ifm-color-danger: var(--github-red);
+  --ifm-color-danger-dark: var(--github-red-dark);
+  --ifm-color-danger-darker: #da3633;
+  --ifm-color-danger-darkest: #b62324;
+  --ifm-color-danger-light: var(--github-red-light);
+  --ifm-color-danger-lighter: #ffb1af;
+  --ifm-color-danger-lightest: #ffc1c0;
+
+  /* Dark mode code highlighting */
+  --docusaurus-highlighted-code-line-bg: rgba(88, 166, 255, 0.15);
+  --ifm-code-background: var(--github-gray-3);
+  --ifm-border-color: var(--github-gray-4);
+  
+  /* Dark mode gradients */
+  --github-gradient: linear-gradient(135deg, #1f6feb 0%, #a371f7 100%);
+  --github-gradient-subtle: linear-gradient(135deg, rgba(31, 111, 235, 0.1) 0%, rgba(163, 113, 247, 0.1) 100%);
+}
+
+/* GitHub-style enhancements */
+.hero {
+  background: var(--github-gradient-subtle);
+  border-bottom: 1px solid var(--ifm-border-color);
+}
+
+.navbar {
+  border-bottom: 1px solid var(--ifm-border-color);
+  box-shadow: none;
+}
+
+.navbar__brand:hover {
+  color: var(--github-blue) !important;
+}
+
+/* GitHub-style buttons */
+.button {
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+}
+
+.button--primary {
+  background: var(--github-green);
+  border-color: rgba(27, 31, 36, 0.15);
+  box-shadow: 0 1px 0 rgba(27, 31, 35, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.button--primary:hover {
+  background: var(--github-green-dark);
+  border-color: rgba(27, 31, 36, 0.15);
+  box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.button--secondary {
+  background: transparent;
+  border: 1px solid var(--ifm-border-color);
+  color: var(--github-blue);
+}
+
+.button--secondary:hover {
+  background: var(--github-gray-0);
+  border-color: var(--github-gray-3);
+}
+
+[data-theme='dark'] .button--secondary:hover {
+  background: var(--github-gray-3);
+}
+
+/* GitHub-style code blocks */
+.prism-code {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+  font-size: 85%;
+}
+
+code {
+  background: var(--ifm-code-background);
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+  padding: 0.2em 0.4em;
+  font-size: 85%;
+}
+
+/* GitHub-style admonitions */
+.alert {
+  border-left: 4px solid;
+  border-radius: 6px;
+  box-shadow: var(--ifm-global-shadow-lw);
+}
+
+.alert--success {
+  --ifm-alert-color: var(--github-green-dark);
+  --ifm-alert-background-color: rgba(26, 127, 55, 0.1);
+  --ifm-alert-border-color: var(--github-green);
+  border-left-color: var(--github-green);
+}
+
+.alert--info {
+  --ifm-alert-color: var(--github-blue-dark);
+  --ifm-alert-background-color: rgba(9, 105, 218, 0.1);
+  --ifm-alert-border-color: var(--github-blue);
+  border-left-color: var(--github-blue);
+}
+
+.alert--warning {
+  --ifm-alert-color: var(--github-orange-dark);
+  --ifm-alert-background-color: rgba(188, 76, 0, 0.1);
+  --ifm-alert-border-color: var(--github-orange);
+  border-left-color: var(--github-orange);
+}
+
+.alert--danger {
+  --ifm-alert-color: var(--github-red-dark);
+  --ifm-alert-background-color: rgba(207, 34, 46, 0.1);
+  --ifm-alert-border-color: var(--github-red);
+  border-left-color: var(--github-red);
+}
+
+/* GitHub-style tabs */
+.tabs {
+  border-bottom: 1px solid var(--ifm-border-color);
+}
+
+.tabs__item {
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+}
+
+.tabs__item--active {
+  border-bottom-color: var(--github-orange);
+  color: var(--ifm-font-color-base);
+}
+
+.tabs__item:hover {
+  color: var(--github-blue);
+}
+
+/* GitHub-style tables */
+.table-wrapper table {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-wrapper th {
+  background: var(--github-gray-0);
+  color: var(--ifm-font-color-base);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ifm-border-color);
+}
+
+[data-theme='dark'] .table-wrapper th {
+  background: var(--github-gray-2);
+}
+
+.table-wrapper td {
+  border-top: 1px solid var(--ifm-border-color);
+}
+
+/* GitHub-style cards */
+.card {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+  box-shadow: var(--ifm-global-shadow-lw);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--ifm-global-shadow-md);
+}
+
+/* GitHub-style sidebar */
+.theme-doc-sidebar-container {
+  border-right: 1px solid var(--ifm-border-color);
+}
+
+.theme-doc-sidebar-menu .theme-doc-sidebar-item-link {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.theme-doc-sidebar-menu .theme-doc-sidebar-item-link--active {
+  background: var(--github-gradient-subtle);
+  color: var(--github-blue);
+  font-weight: 600;
+}
+
+.theme-doc-sidebar-menu .theme-doc-sidebar-item-link:hover {
+  background: var(--github-gray-0);
+}
+
+[data-theme='dark'] .theme-doc-sidebar-menu .theme-doc-sidebar-item-link:hover {
+  background: var(--github-gray-3);
+}
+
+/* GitHub-style TOC */
+.table-of-contents {
+  border-left: 1px solid var(--ifm-border-color);
+}
+
+.table-of-contents__link {
+  font-size: 0.875rem;
+}
+
+.table-of-contents__link--active {
+  color: var(--github-blue);
+  font-weight: 600;
+}
+
+/* GitHub-style footer */
+.footer {
+  border-top: 1px solid var(--ifm-border-color);
+  background: var(--github-gray-0);
+}
+
+[data-theme='dark'] .footer {
+  background: var(--github-gray-2);
+}
+
+/* Improved readability - GitHub style */
+.markdown {
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+}
+
+.markdown h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--ifm-border-color);
+  padding-bottom: 0.3em;
+}
+
+.markdown h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--ifm-border-color);
+  padding-bottom: 0.3em;
+}
+
+.markdown p {
+  margin-bottom: 16px;
+}
+
+.markdown ul,
+.markdown ol {
+  margin-bottom: 16px;
+  padding-left: 2em;
+}
+
+.markdown li {
+  margin-bottom: 0.25em;
+}
+
+/* GitHub-style badges */
+.badge {
+  border-radius: 2em;
+  font-size: 75%;
+  font-weight: 600;
+  padding: 0.25em 0.6em;
+}
+
+.badge--primary {
+  background: var(--github-blue);
+  color: white;
+}
+
+.badge--success {
+  background: var(--github-green);
+  color: white;
+}
+
+.badge--danger {
+  background: var(--github-red);
+  color: white;
+}
+
+.badge--warning {
+  background: var(--github-orange);
+  color: white;
+}
+
+/* Enhanced focus states for accessibility - GitHub style */
+*:focus-visible {
+  outline: 2px solid var(--github-blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* GitHub-style pagination */
+.pagination-nav__link {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+}
+
+.pagination-nav__link:hover {
+  border-color: var(--github-gray-4);
+  box-shadow: var(--ifm-global-shadow-lw);
+}
+
+/* GitHub-style dropdown */
+.dropdown__menu {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+  box-shadow: var(--ifm-global-shadow-md);
+}
+
+/* Version dropdown badge styling */
+.navbar__item .dropdown__menu [class*="badge"] {
+  color: white !important;
+  background-color: var(--github-orange) !important;
+  border-radius: 2em;
+  font-weight: 600;
+}
+
+.navbar__item .dropdown__menu .dropdown__link [class*="badge"] {
+  color: white !important;
+  background-color: var(--github-orange) !important;
+}
+
+html body .navbar__item .dropdown__menu span[class*="badge"] {
+  color: white !important;
+  background-color: var(--github-orange) !important;
+  -webkit-text-fill-color: white !important;
+}
+
+/* GitHub-style search */
+.navbar__search-input {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 6px;
+}
+
+.navbar__search-input:focus {
+  border-color: var(--github-blue);
+}
+
+/* GitHub-style scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--github-gray-0);
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: var(--github-gray-2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--github-gray-3);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--github-gray-5);
+  background-clip: content-box;
+}
+
+/* GitHub-style blockquotes */
+.markdown blockquote {
+  border-left: 4px solid var(--github-gray-3);
+  padding-left: 1em;
+  color: var(--github-gray-6);
+  font-style: italic;
+}
+
+[data-theme='dark'] .markdown blockquote {
+  border-left-color: var(--github-gray-5);
+  color: var(--github-gray-7);
+}
+
+/* GitHub Actions workflow badge colors */
+.badge--workflow {
+  background: var(--github-purple);
+  color: white;
+}
+
+.badge--ci {
+  background: var(--github-blue);
+  color: white;
+}
+
+.badge--test {
+  background: var(--github-green);
+  color: white;
+}
