@@ -67,11 +67,47 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Download code coverage result files which has be handled by different test type process
+      - name: Download all coverage XML reports
         uses: actions/download-artifact@v8
+        continue-on-error: true
         with:
-          name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
-          path: ${{ inputs.project_working_directory }}${{ inputs.download_path }}
+          pattern: '*_coverage_xml_report'
+          path: ./coverage-downloads
+          merge-multiple: false
+
+      - name: Move coverage files to correct package directories
+        run: |
+          echo "📂 Moving coverage files to match sonar-project.properties paths..."
+          
+          # For each downloaded artifact folder, move the coverage XML to the correct package directory
+          if [ -d "./coverage-downloads" ]; then
+            for artifact_dir in ./coverage-downloads/*; do
+              if [ -d "$artifact_dir" ]; then
+                artifact_name=$(basename "$artifact_dir")
+                echo "Processing artifact: $artifact_name"
+                
+                # Determine target directory based on artifact name
+                if [[ "$artifact_name" == test-coverage-mcp_* ]] && [[ "$artifact_name" != *codecov* ]]; then
+                  # Core package: move to test-coverage-mcp/
+                  mkdir -p ./test-coverage-mcp
+                  mv "$artifact_dir"/*.xml ./test-coverage-mcp/ 2>/dev/null && echo "  ✅ Moved to test-coverage-mcp/" || echo "  ⚠️ No XML files found"
+                elif [[ "$artifact_name" == test-coverage-mcp-codecov_* ]]; then
+                  # Codecov package: move to test-coverage-mcp-codecov/
+                  mkdir -p ./test-coverage-mcp-codecov
+                  mv "$artifact_dir"/*.xml ./test-coverage-mcp-codecov/ 2>/dev/null && echo "  ✅ Moved to test-coverage-mcp-codecov/" || echo "  ⚠️ No XML files found"
+                else
+                  # Single-project repo: move to root
+                  mv "$artifact_dir"/*.xml ./ 2>/dev/null && echo "  ✅ Moved to root" || echo "  ⚠️ No XML files found"
+                fi
+              fi
+            done
+          else
+            echo "⚠️ No coverage downloads found - scanning without coverage"
+          fi
+          
+          echo ""
+          echo "📊 Final coverage file locations:"
+          find . -path ./coverage-downloads -prune -o -name "coverage*.xml" -type f -print 2>/dev/null || echo "No coverage files"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v7.1.0
