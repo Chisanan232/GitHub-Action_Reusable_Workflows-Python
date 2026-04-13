@@ -118,10 +118,10 @@ jobs:
         run: |
           echo "Downloading coverage combine script..."
           curl -fsSL -o ./combine_coverage_reports.sh https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/master/scripts/ci/combine_coverage_reports.sh
-          bash ./combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
           pwd
           ls -la
           ls -la ./src
+          bash ./combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
 
       - name: Debug coverage paths
         if: steps.check_coverage.outputs.has_coverage == 'true'
