@@ -83,7 +83,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_data_file', inputs.project_name, inputs.test_type) || format('{0}_coverage_data_file', inputs.test_type) }}
-          path: ${{ inputs.test_working_directory }}.coverage
+          path: ${{ inputs.test_working_directory }}/.coverage
           if-no-files-found: error
           include-hidden-files: true
 
@@ -91,6 +91,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
-          path: ${{ inputs.test_working_directory }}coverage**xml
+          path: ${{ inputs.test_working_directory }}/coverage**xml
           if-no-files-found: error
           include-hidden-files: true
