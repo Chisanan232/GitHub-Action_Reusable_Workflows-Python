@@ -14,7 +14,7 @@ else
   coverage combine --data-file="$coveragedatafile" "$test_coverage_report_format$test_type"*
 fi
 
-coverage report -m --data-file="$coveragedatafile"
+# coverage report -m --data-file="$coveragedatafile"
 coverage xml --data-file="$coveragedatafile" -o coverage_"$test_type".xml
 cp "$coveragedatafile" .coverage
 echo "✅ All processing done." && exit 0

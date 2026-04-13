@@ -50,8 +50,29 @@ jobs:
   organize_and_generate_test_reports:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Full history for accurate coverage paths
+
+      - name: Verify source code exists
+        run: |
+          echo "📂 Repository root contents:"
+          ls -la
+          echo ""
+          echo "📂 Working directory (${{ inputs.test_working_directory }}) contents:"
+          if [ -d "${{ inputs.test_working_directory }}" ]; then
+            ls -la ${{ inputs.test_working_directory }}
+            if [ -d "${{ inputs.test_working_directory }}/src" ]; then
+              echo ""
+              echo "✅ Source code directory exists at ${{ inputs.test_working_directory }}/src"
+            else
+              echo ""
+              echo "⚠️ Warning: No src directory found at ${{ inputs.test_working_directory }}/src"
+            fi
+          else
+            echo "⚠️ Warning: Working directory ${{ inputs.test_working_directory }} does not exist"
+          fi
 
       - name: Download code coverage result file
         uses: actions/download-artifact@v8
@@ -95,17 +116,35 @@ jobs:
         if: steps.check_coverage.outputs.has_coverage == 'true'
         working-directory: ${{ inputs.test_working_directory }}
         run: |
-          mkdir -p ./scripts/ci/
-          echo "Download shell script for combining coverage reports ..."
-          curl https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/combine_coverage_reports.sh --output ./scripts/ci/combine_coverage_reports.sh
-          bash ./scripts/ci/combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
+          echo "Downloading coverage combine script..."
+          curl -fsSL -o combine_coverage_reports.sh https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/master/scripts/ci/combine_coverage_reports.sh
+          bash combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
+
+      - name: Debug coverage paths
+        if: steps.check_coverage.outputs.has_coverage == 'true'
+        working-directory: ${{ inputs.test_working_directory }}
+        run: |
+          echo "🔍 Checking combined coverage data..."
+          if [ -f ".coverage.${{ inputs.test_type }}" ]; then
+            echo "📊 Files referenced in coverage data:"
+            coverage debug data --data-file=.coverage.${{ inputs.test_type }} || echo "⚠️ Could not read coverage data"
+            echo ""
+            echo "📂 Current directory structure:"
+            pwd
+            ls -la
+            echo ""
+            echo "📂 Source directory (if exists):"
+            ls -la src/ 2>/dev/null || echo "⚠️ No src/ directory found"
+          else
+            echo "⚠️ Combined coverage file not found"
+          fi
 
       - name: Upload testing coverage report (.coverage)
         if: steps.check_coverage.outputs.has_coverage == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_data_file', inputs.project_name, inputs.test_type) || format('{0}_coverage_data_file', inputs.test_type) }}
-          path: ${{ inputs.test_working_directory }}.coverage
+          path: ${{ inputs.test_working_directory }}/.coverage
           if-no-files-found: warn
           include-hidden-files: true
 
@@ -114,6 +153,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.project_name != '' && format('{0}_{1}_coverage_xml_report', inputs.project_name, inputs.test_type) || format('{0}_coverage_xml_report', inputs.test_type) }}
-          path: ${{ inputs.test_working_directory }}coverage**xml
+          path: ${{ inputs.test_working_directory }}/coverage**xml
           if-no-files-found: warn
           include-hidden-files: true

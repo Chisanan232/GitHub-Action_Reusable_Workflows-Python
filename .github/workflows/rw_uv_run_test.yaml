@@ -9,11 +9,18 @@
 #
 # Workflow input parameters:
 #     * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
+#     * project_name: Project identifier for monorepo support (used in artifact naming). Leave empty for single-project repos.
+#     * test_working_directory: The working directory for test running. Default: './'
+#     * test_folder: The folder path for test code. Default: './test'
 #     * all_test_items_paths: The target paths of test items under test.
 #     * install_dependency_with_group: Install the dependency by UV configuration with dependency group setting. This parameter receive the dependency group naming.
+#     * with-environment-variables: Set the specific environment for the environment variables.
 #     * pre_test_script: Shell script or bash command to run before executing tests (optional).
+#     * max-parallel: Set the max-parallel jobs. Default: 0 (no limit)
 #     * python-versions: JSON array of Python versions to test against. Default: '["3.13"]'
 #     * operating-systems: JSON array of operating systems to test on. Default: '["ubuntu-latest", "ubuntu-22.04", "macos-latest", "macos-14"]'
+#     * handle-coverage-report: Enable to rename and upload pytest coverage reports. Default: true
+#     * keep_run_if_test_fail: Continue workflow execution even if tests fail. Default: false
 #
 # Workflow running output:
 #     * Outputs:
@@ -92,6 +99,11 @@ on:
         type: boolean
         required: false
         default: true
+      keep_run_if_test_fail:
+        description: "Continue workflow execution even if tests fail."
+        type: boolean
+        required: false
+        default: false
     secrets:
       e2e_test_api_token:
         description: "Set the API token for end-to-end test if it needs."
@@ -222,7 +234,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.project_name != '' && format('coverage_{0}_{1}_{2}_{3}', inputs.project_name, inputs.test_type, matrix.os, matrix.python-version) || format('coverage_{0}_{1}_{2}', inputs.test_type, matrix.os, matrix.python-version) }}
-          path: ${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
+          path: ${{ inputs.test_working_directory }}/.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}
           if-no-files-found: warn
           include-hidden-files: true
 
@@ -245,7 +257,7 @@ jobs:
           fi
           
           # Determine if coverage was generated
-          if [ -f "${{ inputs.test_working_directory }}.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}" ]; then
+          if [ -f "${{ inputs.test_working_directory }}/.coverage.${{ inputs.test_type }}.${{ matrix.os }}-${{ matrix.python-version }}" ]; then
             echo "has_coverage=true" >> $GITHUB_OUTPUT
             echo "📊 Coverage report available"
           else
