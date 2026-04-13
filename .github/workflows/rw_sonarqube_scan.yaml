@@ -2,12 +2,16 @@
 #
 # Workflow Description:
 #     Trigger SonarQube cloud service to scan entire project to check code quality, security, etc.
+#     Supports both single-project and monorepo configurations.
 #
 # Workflow input parameters:
 #     * General arguments:
-#         * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
-#         * download_path: The path to download testing coverage reports via 'actions/download-artifact'.
-#         * sonar_host_url: The server host URL about SonarQube scanning mechanism.
+#         * test_type: The testing type (default: 'all-test'). Options: 'unit-test', 'integration-test', 'all-test'.
+#         * is_monorepo: Boolean flag indicating if this is a monorepo (default: false).
+#         * download_path: The path to download testing coverage reports via 'actions/download-artifact' (default: './').
+#         * project_working_directory: Working directory for the project to scan (default: './').
+#         * sonar_project_key: SonarQube project key (optional, uses sonar-project.properties if not set).
+#         * sonar_host_url: The server host URL about SonarQube scanning mechanism (default: 'https://sonarcloud.io').
 #
 #     * Secret arguments:
 #         * sonar_token: The API token for triggering SonarQube cloud service.
@@ -27,11 +31,11 @@ on:
         required: false
         type: string
         default: all-test
-      project_name:
-        description: "Project identifier for monorepo (filters coverage artifacts by project). Leave empty for single-project repos."
-        type: string
+      is_monorepo:
+        description: "Set to true for monorepo projects (organizes coverage files by package). Set to false for single-project repos."
+        type: boolean
         required: false
-        default: ''
+        default: false
       project_working_directory:
         description: "Working directory for the project to scan. For monorepo, specify the package directory."
         type: string
@@ -76,7 +80,7 @@ jobs:
           merge-multiple: false
 
       - name: Move coverage files to package directories (monorepo only)
-        if: inputs.project_name != ''
+        if: inputs.is_monorepo == true
         run: |
           echo "📂 Organizing coverage files for monorepo..."
           
