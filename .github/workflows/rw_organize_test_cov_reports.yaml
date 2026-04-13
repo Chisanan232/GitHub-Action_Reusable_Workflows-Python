@@ -50,8 +50,29 @@ jobs:
   organize_and_generate_test_reports:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Full history for accurate coverage paths
+
+      - name: Verify source code exists
+        run: |
+          echo "📂 Repository root contents:"
+          ls -la
+          echo ""
+          echo "📂 Working directory (${{ inputs.test_working_directory }}) contents:"
+          if [ -d "${{ inputs.test_working_directory }}" ]; then
+            ls -la ${{ inputs.test_working_directory }}
+            if [ -d "${{ inputs.test_working_directory }}/src" ]; then
+              echo ""
+              echo "✅ Source code directory exists at ${{ inputs.test_working_directory }}/src"
+            else
+              echo ""
+              echo "⚠️ Warning: No src directory found at ${{ inputs.test_working_directory }}/src"
+            fi
+          else
+            echo "⚠️ Warning: Working directory ${{ inputs.test_working_directory }} does not exist"
+          fi
 
       - name: Download code coverage result file
         uses: actions/download-artifact@v8
@@ -98,6 +119,25 @@ jobs:
           echo "Downloading coverage combine script..."
           curl -fsSL -o combine_coverage_reports.sh https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/develop/scripts/ci/combine_coverage_reports.sh
           bash combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
+
+      - name: Debug coverage paths
+        if: steps.check_coverage.outputs.has_coverage == 'true'
+        working-directory: ${{ inputs.test_working_directory }}
+        run: |
+          echo "🔍 Checking combined coverage data..."
+          if [ -f ".coverage.${{ inputs.test_type }}" ]; then
+            echo "📊 Files referenced in coverage data:"
+            coverage debug data --data-file=.coverage.${{ inputs.test_type }} || echo "⚠️ Could not read coverage data"
+            echo ""
+            echo "📂 Current directory structure:"
+            pwd
+            ls -la
+            echo ""
+            echo "📂 Source directory (if exists):"
+            ls -la src/ 2>/dev/null || echo "⚠️ No src/ directory found"
+          else
+            echo "⚠️ Combined coverage file not found"
+          fi
 
       - name: Upload testing coverage report (.coverage)
         if: steps.check_coverage.outputs.has_coverage == 'true'
