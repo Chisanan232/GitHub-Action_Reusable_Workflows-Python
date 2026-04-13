@@ -135,12 +135,29 @@ jobs:
       - name: Check if coverage files exist
         id: check_coverage
         run: |
+          HAS_XML=false
+          HAS_DATA=false
+          
           if [ -f "${{ inputs.download_path }}/coverage_${{ inputs.test_type }}.xml" ]; then
-            echo "has_coverage=true" >> $GITHUB_OUTPUT
+            HAS_XML=true
             echo "✅ Coverage XML file found"
           else
+            echo "⚠️ Coverage XML file not found"
+          fi
+          
+          if [ -f "${{ inputs.download_path }}/.coverage" ]; then
+            HAS_DATA=true
+            echo "✅ Coverage data file (.coverage) found"
+          else
+            echo "⚠️ Coverage data file (.coverage) not found"
+          fi
+          
+          if [ "$HAS_XML" = "true" ] || [ "$HAS_DATA" = "true" ]; then
+            echo "has_coverage=true" >> $GITHUB_OUTPUT
+            echo "✅ Coverage files available for upload"
+          else
             echo "has_coverage=false" >> $GITHUB_OUTPUT
-            echo "⏭️ No coverage XML file found - skipping upload"
+            echo "⏭️ No coverage files found - skipping upload"
           fi
 
       - name: Install Python ${{ inputs.run_with_python_version }}
