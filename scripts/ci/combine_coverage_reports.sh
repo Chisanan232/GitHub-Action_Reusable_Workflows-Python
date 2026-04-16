@@ -4,6 +4,7 @@ set -ex
 
 test_type=$1
 test_coverage_report_format=$2
+source_folder=${3:-src}  # Default to 'src' if not provided
 
 coveragedatafile=".coverage.$test_type"
 
@@ -17,16 +18,17 @@ fi
 # Get current working directory for path remapping
 CURRENT_DIR=$(pwd)
 echo "📂 Current directory: $CURRENT_DIR"
+echo "📁 Source folder: $source_folder"
 
 # Create .coveragerc to handle path remapping from macOS (/Users/) to Linux (/home/)
 cat > .coveragerc << EOF
 [paths]
 source =
-    src/
-    ./src/
-    */src/
-    /Users/runner/work/*/src/
-    /home/runner/work/*/src/
+    $source_folder/
+    ./$source_folder/
+    */$source_folder/
+    /Users/runner/work/*/$source_folder/
+    /home/runner/work/*/$source_folder/
 EOF
 
 echo "📝 Created .coveragerc for path remapping"

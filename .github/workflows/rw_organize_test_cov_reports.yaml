@@ -8,8 +8,10 @@
 #
 # Workflow input parameters:
 #     * test_type: The testing type. In generally, it only has 2 options: 'unit-test' and 'integration-test'.
+#     * project_name: Project identifier for monorepo (filters coverage artifacts by project). Leave empty for single-project repos.
 #     * run_with_python_version: The Python version you want to use in this workflow.
 #     * test_working_directory: The working directory for test running.
+#     * source_folder: Source code folder name for coverage path remapping (e.g., 'src', 'lib', 'app'). Default: 'src'.
 #
 # Workflow running output:
 #     No, but it would save the testing coverage reports (coverage.xml) to provide after-process to organize and record.
@@ -44,6 +46,11 @@ on:
         required: false
         type: string
         default: './'
+      source_folder:
+        description: "Source code folder name for coverage path remapping (e.g., 'src', 'lib', 'app'). Default: 'src'."
+        required: false
+        type: string
+        default: 'src'
 
 
 jobs:
@@ -118,7 +125,7 @@ jobs:
         run: |
           echo "Downloading coverage combine script..."
           curl -fsSL -o ./combine_coverage_reports.sh https://raw.githubusercontent.com/Chisanan232/GitHub-Action_Reusable_Workflows-Python/master/scripts/ci/combine_coverage_reports.sh
-          bash ./combine_coverage_reports.sh ${{ inputs.test_type }} .coverage.
+          bash ./combine_coverage_reports.sh ${{ inputs.test_type }} .coverage. ${{ inputs.source_folder }}
 
       - name: Upload testing coverage report (.coverage)
         if: steps.check_coverage.outputs.has_coverage == 'true'
