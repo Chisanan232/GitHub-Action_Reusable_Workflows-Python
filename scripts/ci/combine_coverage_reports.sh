@@ -27,8 +27,9 @@ source =
     $source_folder/
     ./$source_folder/
     */$source_folder/
-    /Users/runner/work/*/$source_folder/
-    /home/runner/work/*/$source_folder/
+    */*/$source_folder/
+    /Users/runner/work/**/$source_folder/
+    /home/runner/work/**/$source_folder/
 EOF
 
 echo "📝 Created .coveragerc for path remapping"
