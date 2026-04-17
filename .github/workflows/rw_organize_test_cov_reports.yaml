@@ -86,7 +86,7 @@ jobs:
         continue-on-error: true
         id: download_coverage
         with:
-          pattern: ${{ inputs.project_name != '' && format('coverage_{0}*', inputs.project_name) || 'coverage*' }}
+          pattern: ${{ inputs.project_name != '' && format('coverage_{0}_*', inputs.project_name) || 'coverage_*' }}
           path: ${{ inputs.test_working_directory }}
           merge-multiple: true
 
