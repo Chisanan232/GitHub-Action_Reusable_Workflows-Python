@@ -16,7 +16,7 @@ on:
       node-version:
         description: 'Node.js version to use'
         required: false
-        default: '22'
+        default: '24'
         type: string
       version:
         description: 'Documentation version for versioning operation'
