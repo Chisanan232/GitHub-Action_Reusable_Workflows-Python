@@ -12,6 +12,7 @@
 #         * upload-to-codecov: If it's true, it would upload testing coverage report for Codecov (https://codecov.io).
 #         * codecov_flags: The flags of the testing coverage report for Codecov. This option would be required if 'upload-to-codecov' is true.
 #         * codecov_name: The name of the testing coverage report for Codecov. This option would be required if 'upload-to-codecov' is true.
+#         * codecov_slug: The repository slug for Codecov (format: owner/repo). Used when uploading with organization-wide tokens.
 #         * upload-to-coveralls: If it's true, it would upload testing coverage report for Coveralls (https://coveralls.io).
 #         * upload-to-codacy: If it's true, it would upload testing coverage report for Codacy (https://app.codacy.com/).
 #
@@ -66,6 +67,11 @@ on:
         default: ''
       codecov_name:
         description: "The name of the testing coverage report for Codecov. This option would be required if 'upload-to-codecov' is true."
+        type: string
+        required: false
+        default: ''
+      codecov_slug:
+        description: "The repository slug for Codecov (format: owner/repo). Used when uploading with organization-wide tokens."
         type: string
         required: false
         default: ''
@@ -221,16 +227,16 @@ jobs:
 
       - name: Upload coverage report to Codecov https://codecov.io
         if: ${{ inputs.upload-to-codecov == true && steps.check_coverage.outputs.has_coverage == 'true' }}
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov \
-            -t ${{ secrets.codecov_token }} \
-            --file coverage_${{ inputs.test_type }}.xml \
-            --flags ${{ inputs.codecov_flags }} \
-            --env OS,PYTHON \
-            --name ${{ inputs.codecov_name }} \
-            --verbose
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.codecov_token }}
+          files: coverage_${{ inputs.test_type }}.xml
+          flags: ${{ inputs.codecov_flags }}
+          env_vars: OS,PYTHON
+          name: ${{ inputs.codecov_name }}
+          slug: ${{ inputs.codecov_slug }}
+          verbose: true
+          fail_ci_if_error: false
 
       - name: Install Python dependencies about tool of Coveralls
         if: ${{ inputs.upload-to-coveralls == true }}
