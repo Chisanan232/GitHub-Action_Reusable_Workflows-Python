@@ -221,16 +221,15 @@ jobs:
 
       - name: Upload coverage report to Codecov https://codecov.io
         if: ${{ inputs.upload-to-codecov == true && steps.check_coverage.outputs.has_coverage == 'true' }}
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov \
-            -t ${{ secrets.codecov_token }} \
-            --file coverage_${{ inputs.test_type }}.xml \
-            --flags ${{ inputs.codecov_flags }} \
-            --env OS,PYTHON \
-            --name ${{ inputs.codecov_name }} \
-            --verbose
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.codecov_token }}
+          files: coverage_${{ inputs.test_type }}.xml
+          flags: ${{ inputs.codecov_flags }}
+          env_vars: OS,PYTHON
+          name: ${{ inputs.codecov_name }}
+          verbose: true
+          fail_ci_if_error: false
 
       - name: Install Python dependencies about tool of Coveralls
         if: ${{ inputs.upload-to-coveralls == true }}
