@@ -103,7 +103,7 @@ jobs:
           find . -name "coverage*.xml" -type f 2>/dev/null || echo "No coverage files"
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        uses: SonarSource/sonarqube-scan-action@v7.2.0
         with:
           projectBaseDir: ${{ inputs.project_working_directory }}
           args: ${{ inputs.sonar_project_key != '' && format('-Dsonar.projectKey={0}', inputs.sonar_project_key) || '' }}
