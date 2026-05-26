@@ -196,6 +196,10 @@ jobs:
   docs-preview:
     uses: ./.github/workflows/rw_docusaurus_operations.yaml
     needs: [config, compute-version]
+    # Skip the Docusaurus preview deploy when intent.yaml sets
+    # `artifacts.docs: skip` — projects using MkDocs (or any non-Docusaurus
+    # docs system) have no `docs/package.json` to install from.
+    if: needs.config.outputs.docs != 'skip'
     with:
       package-name: ${{ inputs.package-name }}
       operation: 'deploy-preview'
@@ -249,7 +253,7 @@ jobs:
           # Validate results based on whether Docker processes were expected
           VERSION_OK="${{ needs.compute-version.result == 'success' }}"
           PYPI_OK="${{ needs.pypi-test.result == 'success' }}"
-          DOCS_OK="${{ needs.docs-preview.result == 'success' }}"
+          DOCS_OK="${{ needs.docs-preview.result == 'success' || needs.docs-preview.result == 'skipped' }}"
           
           if [ "$HAS_DOCKERFILE" = "true" ]; then
             # Docker processes should have run - validate them
