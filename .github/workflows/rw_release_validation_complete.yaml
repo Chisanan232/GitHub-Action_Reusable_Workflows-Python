@@ -159,6 +159,11 @@ jobs:
   docs-build:
     uses: ./.github/workflows/rw_docusaurus_operations.yaml
     needs: [config, intent-parse]
+    # Skip the Docusaurus test invocation when intent.yaml sets
+    # `artifacts.docs: skip` — projects using MkDocs (or any non-Docusaurus
+    # docs system) declare this so the validation pipeline doesn't try to
+    # `pnpm install` in a Markdown-only `docs/` tree.
+    if: needs.intent-parse.outputs.docs != 'skip'
     with:
       package-name: ${{ inputs.package-name }}
       operation: 'test'
