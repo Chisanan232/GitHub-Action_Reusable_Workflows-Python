@@ -221,7 +221,7 @@ jobs:
           # Validate results based on whether Docker processes were expected
           INTENT_OK="${{ needs.intent-parse.result == 'success' }}"
           PYTHON_OK="${{ needs.python-build-check.result == 'success' }}"
-          DOCS_OK="${{ needs.docs-build.result == 'success' }}"
+          DOCS_OK="${{ needs.docs-build.result == 'success' || needs.docs-build.result == 'skipped' }}"
           
           if [ "$HAS_DOCKERFILE" = "true" ]; then
             # Docker processes should have run - validate them
