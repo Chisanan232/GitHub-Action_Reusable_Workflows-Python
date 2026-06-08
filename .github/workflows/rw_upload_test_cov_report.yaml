@@ -227,7 +227,7 @@ jobs:
 
       - name: Upload coverage report to Codecov https://codecov.io
         if: ${{ inputs.upload-to-codecov == true && steps.check_coverage.outputs.has_coverage == 'true' }}
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.codecov_token }}
           files: coverage_${{ inputs.test_type }}.xml
