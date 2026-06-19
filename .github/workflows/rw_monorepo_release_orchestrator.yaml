@@ -118,7 +118,7 @@ jobs:
       is_monorepo: ${{ steps.parse.outputs.is_monorepo }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Full history for change detection
 
@@ -165,7 +165,7 @@ jobs:
       changed_count: ${{ steps.detect.outputs.changed_count }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
